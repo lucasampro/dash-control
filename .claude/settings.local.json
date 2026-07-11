@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__7f5ab162-3d7f-47f0-af14-d3da5500cdaa__get_file_metadata",
+      "mcp__7f5ab162-3d7f-47f0-af14-d3da5500cdaa__download_file_content",
+      "WebFetch(domain:docs.google.com)",
+      "Bash(npm -v)",
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --no-turbopack --skip-install=false)",
+      "Bash(rm -rf /tmp/dash-control-app)",
+      "Bash(npx --yes create-next-app@latest /tmp/dash-control-app --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --no-turbopack)",
+      "Read(//private/tmp/**)",
+      "Bash(PUB=\"2PACX-1vQes4nKGoIkFjAUDa7Vrkp1s_Irpha6xTkIQIF8E591iWP3dpt_hys57fhymaGWL616CJ__WXcGdb47\")",
+      "Bash(curl -sL \"https://docs.google.com/spreadsheets/d/e/$PUB/pub?gid=1012843699&single=true&output=csv\" -o dashboard.csv)",
+      "Bash(curl -sL \"https://docs.google.com/spreadsheets/d/e/$PUB/pub?gid=2002637007&single=true&output=csv\" -o diario.csv)",
+      "Bash(curl -sL \"https://docs.google.com/spreadsheets/d/e/$PUB/pub?gid=1690550108&single=true&output=csv\" -o mensal.csv)",
+      "Bash(node -e \"console.log\\(require\\(''crypto''\\).randomBytes\\(32\\).toString\\(''hex''\\)\\)\")",
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(node scripts/hash-password.mjs teste123)",
+      "Bash(npm run:*)",
+      "Bash(curl -s -o /dev/null -w \"still up: %{http_code}\\\\n\" http://localhost:3100/login)",
+      "Bash(curl -s -b /tmp/cookies.txt http://localhost:3100/dashboard -o /tmp/dashboard.html -w \"STATUS:%{http_code}\\\\n\")",
+      "Bash(curl -s -o /dev/null -w \"sem login -> %{http_code} redirect:%{redirect_url}\\\\n\" http://localhost:3100/dashboard)",
+      "Bash(wc -l grep -oE '>Jun / 26<' /tmp/dashboard.html)",
+      "Bash(pkill -f \"next dev -p 3100\")",
+      "Bash(rm -f /tmp/cookies.txt /tmp/dashboard.html /tmp/dashboard.csv /tmp/diario.csv /tmp/mensal.csv)",
+      "mcp__Claude_Preview__preview_start",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__navigate"
+    ]
+  }
+}

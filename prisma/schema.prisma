@@ -1,0 +1,164 @@
+// Schema do sistema CONTROL - substitui a planilha Google Sheets.
+// Entidades base (cadastro), lançamentos manuais e o Lead como
+// registro central do funil comercial (preenchido progressivamente).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  SDR
+  CLOSER
+}
+
+enum Origem {
+  PAGO
+  ORGANICO
+}
+
+enum ReuniaoStatus {
+  PENDENTE
+  FEITA
+  NO_SHOW
+}
+
+enum Resultado {
+  EM_ANDAMENTO
+  GANHO
+  PERDIDO
+}
+
+// Cadastro de membros da equipe (SDRs e Closers).
+model TeamMember {
+  id        String   @id @default(cuid())
+  nome      String
+  role      Role
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  leadsComoSdr    Lead[] @relation("SdrLeads")
+  leadsComoCloser Lead[] @relation("CloserLeads")
+}
+
+// Cadastro de criativos (peças de anúncio).
+model Criativo {
+  id        String   @id @default(cuid())
+  nome      String
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  leads          Lead[]
+  investimentos  CriativoMensal[]
+}
+
+// Investimento mensal por criativo + marcação de vencedor.
+model CriativoMensal {
+  id            String   @id @default(cuid())
+  criativoId    String
+  criativo      Criativo @relation(fields: [criativoId], references: [id], onDelete: Cascade)
+  mes           String   // formato "YYYY-MM"
+  investimento  Float
+  vencedor      Boolean  @default(false)
+
+  @@unique([criativoId, mes])
+}
+
+// Lista fixa de motivos de não-fechamento (reunião feita, proposta apresentada, mas não fechou).
+model MotivoNaoFechamento {
+  id    String @id @default(cuid())
+  nome  String @unique
+  ativo Boolean @default(true)
+
+  leads Lead[]
+}
+
+// Entidade central: um lead, atualizado progressivamente ao longo do funil.
+model Lead {
+  id        String   @id @default(cuid())
+  data      DateTime // data de entrada do lead
+  origem    Origem
+
+  criativoId String?
+  criativo   Criativo? @relation(fields: [criativoId], references: [id])
+
+  sdrId String?
+  sdr   TeamMember? @relation("SdrLeads", fields: [sdrId], references: [id])
+
+  qualificado Boolean?
+  agendou     Boolean?
+
+  reuniaoStatus ReuniaoStatus @default(PENDENTE)
+
+  closerId String?
+  closer   TeamMember? @relation("CloserLeads", fields: [closerId], references: [id])
+
+  motivoNaoFechamentoId String?
+  motivoNaoFechamento   MotivoNaoFechamento? @relation(fields: [motivoNaoFechamentoId], references: [id])
+
+  resultado Resultado @default(EM_ANDAMENTO)
+  receita   Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([data])
+  @@index([sdrId])
+  @@index([closerId])
+}
+
+// Investimento diário em mídia (independe de criativo específico).
+model InvestimentoDiario {
+  id     String   @id @default(cuid())
+  data   DateTime @unique
+  valor  Float
+}
+
+// Métricas mensais de operação (para NPS, LTV, Payback CAC, Churn, NRR).
+model MetricaMensal {
+  id             String @id @default(cuid())
+  mes            String @unique // "YYYY-MM"
+
+  custoComercial Float // custo total da operação comercial no mês (para CAC)
+
+  logosInicio    Int
+  logosPerdidos  Int
+
+  mrrInicio      Float
+  mrrPerdido     Float
+  mrrExpansao    Float
+
+  clientesAtivos Int
+
+  promotores  Int
+  neutros     Int
+  detratores  Int
+
+  faturamento Float
+}
+
+// Metas do mês.
+model MetaMensal {
+  id                    String @id @default(cuid())
+  mes                   String @unique // "YYYY-MM"
+  metaLeads             Int
+  metaFechamentos       Int
+  metaReceita           Float
+  metaCplQualificado    Float
+}
+
+// Usuários com acesso ao painel (login).
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  name         String
+  isAdmin      Boolean  @default(false)
+  ativo        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}

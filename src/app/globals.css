@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tokens "fonte" em variáveis CSS puras. O `@theme inline` abaixo só faz
+   `var(--x)` apontar para elas — como Tailwind v4 mantém essa indireção em
+   vez de embutir o hex literal na classe utilitária, redefinir os valores
+   aqui dentro de `.dark` atualiza TODAS as classes (bg-control-ink,
+   border-control-line, bg-control-blue-50 etc.) em tempo real, sem precisar
+   de `dark:` espalhado pelos componentes. Se algum token for declarado
+   direto no `@theme inline` (hex fixo), Tailwind embute o valor no build e
+   ele para de reagir à troca de tema — por isso todo token vive aqui. */
+:root {
+  --background: #f6f7fb;
+  --foreground: #0f1729;
+
+  /* Marca — azul */
+  --control-blue-900: #0e1f6b;
+  --control-blue-800: #16309c;
+  --control-blue-700: #1c3fc2;
+  --control-blue-600: #2554f0;
+  --control-blue-500: #3f6bff;
+  --control-blue-100: #e7edff;
+  --control-blue-50: #f2f5ff;
+
+  /* Marca — dourado */
+  --control-gold-600: #b6883a;
+  --control-gold-500: #d4a853;
+  --control-gold-300: #e8c888;
+  --control-gold-100: #f6ead0;
+
+  /* Neutros (levemente azulados, mais frios que puro cinza) */
+  --control-ink: #0f1729;
+  --control-bg: #f6f7fb;
+  --control-line: #e4e8f2;
+  --control-surface: #ffffff;
+
+  /* Semânticas — status */
+  --control-success-600: #178a5b;
+  --control-success-100: #e3f7ee;
+  --control-danger-600: #d8433f;
+  --control-danger-100: #fbe9e8;
+  --control-warning-600: #b7791f;
+  --control-warning-100: #fbf0dc;
+  --control-neutral-600: #5b6478;
+  --control-neutral-100: #eceef4;
+}
+
+/* Modo escuro — mesmos tokens, valores redefinidos. */
+.dark {
+  --background: #0b0e17;
+  --foreground: #e7ecf7;
+
+  --control-ink: #e7ecf7;
+  --control-bg: #0b0e17;
+  --control-line: #232a3d;
+  --control-surface: #131726;
+
+  --control-blue-50: #16213d;
+  --control-blue-100: #1c2b4d;
+  --control-blue-700: #86a6ff;
+
+  --control-gold-100: #2c2410;
+
+  --control-success-100: #123527;
+  --control-danger-100: #3a1917;
+  --control-warning-100: #332710;
+  --control-neutral-100: #1c2233;
+  --control-neutral-600: #aab3c5;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-control-blue-900: var(--control-blue-900);
+  --color-control-blue-800: var(--control-blue-800);
+  --color-control-blue-700: var(--control-blue-700);
+  --color-control-blue-600: var(--control-blue-600);
+  --color-control-blue-500: var(--control-blue-500);
+  --color-control-blue-100: var(--control-blue-100);
+  --color-control-blue-50: var(--control-blue-50);
+
+  --color-control-gold-600: var(--control-gold-600);
+  --color-control-gold-500: var(--control-gold-500);
+  --color-control-gold-300: var(--control-gold-300);
+  --color-control-gold-100: var(--control-gold-100);
+
+  --color-control-ink: var(--control-ink);
+  --color-control-bg: var(--control-bg);
+  --color-control-line: var(--control-line);
+  --color-control-surface: var(--control-surface);
+
+  --color-control-success-600: var(--control-success-600);
+  --color-control-success-100: var(--control-success-100);
+  --color-control-danger-600: var(--control-danger-600);
+  --color-control-danger-100: var(--control-danger-100);
+  --color-control-warning-600: var(--control-warning-600);
+  --color-control-warning-100: var(--control-warning-100);
+  --color-control-neutral-600: var(--control-neutral-600);
+  --color-control-neutral-100: var(--control-neutral-100);
+}
+
+* {
+  border-color: var(--color-control-line);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--color-control-blue-100);
+  color: var(--color-control-blue-900);
+}
+
+/* Scrollbar discreta */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-control-line);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #cfd6e6;
+  background-clip: padding-box;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #384056;
+  background-clip: padding-box;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-control-neutral-100) 25%,
+    #f4f6fb 37%,
+    var(--color-control-neutral-100) 63%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-control-neutral-100) 25%,
+    #262e42 37%,
+    var(--color-control-neutral-100) 63%
+  );
+  background-size: 800px 100%;
+}
