@@ -38,6 +38,7 @@ import { TrendChart, type TrendPoint } from "@/components/TrendChart";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MesSelector } from "@/components/ui/MesSelector";
+import { AutoRefresh } from "@/components/ui/AutoRefresh";
 import { CompararToggle } from "./CompararToggle";
 import {
   sectionTitleClass,
@@ -143,6 +144,7 @@ export default async function DashboardPage({
 
   return (
     <div className="flex flex-col gap-8">
+      <AutoRefresh />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-control-ink">
