@@ -43,3 +43,4 @@ next-env.d.ts
 # prisma (sqlite local dev only, não usado em produção)
 prisma/dev.db
 prisma/dev.db-journal
+src/generated/
