@@ -302,6 +302,76 @@ export async function getCriativosPerformance(mes: string) {
   return results;
 }
 
+/**
+ * Ranking de leads/fechamentos por Campanha → Conjunto → Anúncio (Criativo),
+ * pro período informado. Ao contrário de `getCriativosPerformance`, não
+ * depende de haver investimento mensal lançado — conta todo lead do período
+ * que tenha um criativo vinculado (mesmo sem investimento cadastrado), então
+ * serve tanto pra atribuição manual quanto pro auto-sync de Lead Ads do Meta.
+ */
+export async function getCriativosRanking(inicio: Date, fim: Date) {
+  const leads = await prisma.lead.findMany({
+    where: { data: { gte: inicio, lt: fim }, criativoId: { not: null } },
+    include: { criativo: true },
+  });
+
+  type Grupo = {
+    id: string;
+    nome: string;
+    campanha: string | null;
+    conjunto: string | null;
+    leads: number;
+    fechamentos: number;
+    receita: number;
+  };
+
+  const porAnuncio = new Map<string, Grupo>();
+  for (const l of leads) {
+    if (!l.criativo) continue;
+    const key = l.criativo.id;
+    const atual = porAnuncio.get(key) ?? {
+      id: l.criativo.id,
+      nome: l.criativo.nome,
+      campanha: l.criativo.campanha,
+      conjunto: l.criativo.conjunto,
+      leads: 0,
+      fechamentos: 0,
+      receita: 0,
+    };
+    atual.leads += 1;
+    if (l.resultado === "GANHO") {
+      atual.fechamentos += 1;
+      atual.receita += l.receita ?? 0;
+    }
+    porAnuncio.set(key, atual);
+  }
+
+  const anuncios = [...porAnuncio.values()]
+    .map((g) => ({ ...g, winRate: pct(g.fechamentos, g.leads) }))
+    .sort((a, b) => b.leads - a.leads);
+
+  function rollup(campo: "campanha" | "conjunto") {
+    const grupos = new Map<string, { nome: string; leads: number; fechamentos: number; receita: number }>();
+    for (const a of anuncios) {
+      const nome = a[campo] ?? "Sem " + (campo === "campanha" ? "campanha" : "conjunto");
+      const atual = grupos.get(nome) ?? { nome, leads: 0, fechamentos: 0, receita: 0 };
+      atual.leads += a.leads;
+      atual.fechamentos += a.fechamentos;
+      atual.receita += a.receita;
+      grupos.set(nome, atual);
+    }
+    return [...grupos.values()]
+      .map((g) => ({ ...g, winRate: pct(g.fechamentos, g.leads) }))
+      .sort((a, b) => b.leads - a.leads);
+  }
+
+  return {
+    anuncios,
+    campanhas: rollup("campanha"),
+    conjuntos: rollup("conjunto"),
+  };
+}
+
 // Fórmulas padrão de mercado, conforme confirmado:
 // NPS = %promotores - %detratores
 // LTV = ARPA / churn de logo

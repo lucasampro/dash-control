@@ -68,7 +68,7 @@ export default async function NovoLeadPage() {
               <option value="">—</option>
               {criativos.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.nome}
+                  {[c.campanha, c.conjunto, c.nome].filter(Boolean).join(" › ")}
                 </option>
               ))}
             </select>

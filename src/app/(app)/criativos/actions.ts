@@ -7,7 +7,10 @@ export async function createCriativo(formData: FormData) {
   const nome = String(formData.get("nome") ?? "").trim();
   if (!nome) throw new Error("Nome do criativo é obrigatório.");
 
-  await prisma.criativo.create({ data: { nome } });
+  const campanha = String(formData.get("campanha") ?? "").trim() || null;
+  const conjunto = String(formData.get("conjunto") ?? "").trim() || null;
+
+  await prisma.criativo.create({ data: { nome, campanha, conjunto } });
   revalidatePath("/criativos");
 }
 

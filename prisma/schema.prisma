@@ -46,12 +46,22 @@ model TeamMember {
   leadsComoCloser Lead[] @relation("CloserLeads")
 }
 
-// Cadastro de criativos (peças de anúncio).
+// Cadastro de criativos (peças de anúncio — nível de Anúncio no Meta Ads).
 model Criativo {
   id        String   @id @default(cuid())
   nome      String
   ativo     Boolean  @default(true)
   createdAt DateTime @default(now())
+
+  // Hierarquia de campanha (preenchida manualmente ou pelo auto-sync do Meta).
+  campanha  String?
+  conjunto  String?
+
+  // IDs do Meta Ads, usados pelo auto-sync (webhook de Lead Ads) pra casar
+  // o lead recebido com o Criativo certo, e auto-criar se for novo.
+  metaAdId       String? @unique
+  metaAdsetId    String?
+  metaCampaignId String?
 
   leads          Lead[]
   investimentos  CriativoMensal[]

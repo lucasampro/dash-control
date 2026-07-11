@@ -15,6 +15,7 @@ import {
   Clock,
   TrendingUp,
   Smile,
+  Sparkles,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import {
@@ -24,6 +25,7 @@ import {
   getPorCloser,
   getMotivosNaoFechamento,
   getCriativosPerformance,
+  getCriativosRanking,
   getFinanceiroMensal,
   mesParaIntervalo,
   mesAnterior,
@@ -109,7 +111,7 @@ export default async function DashboardPage({
   const mesAnt = mesAnterior(mes);
   const anterior = mesParaIntervalo(mesAnt);
 
-  const [funil, funilAnterior, porSdr, porCloser, motivos, criativos, financeiro, meta, diario] =
+  const [funil, funilAnterior, porSdr, porCloser, motivos, criativos, criativosRanking, financeiro, meta, diario] =
     await Promise.all([
       getFunilPeriodo(inicio, fim),
       getFunilPeriodo(anterior.inicio, anterior.fim),
@@ -117,6 +119,7 @@ export default async function DashboardPage({
       getPorCloser(inicio, fim),
       getMotivosNaoFechamento(inicio, fim),
       getCriativosPerformance(mes),
+      getCriativosRanking(inicio, fim),
       getFinanceiroMensal(mes),
       prisma.metaMensal.findUnique({ where: { mes } }),
       getFunilDiario(mes),
@@ -514,6 +517,119 @@ export default async function DashboardPage({
             )}
           </div>
         </div>
+      </div>
+
+      <div className={cardClass}>
+        <p className={sectionTitleClass}>Desempenho por Campanha/Anúncio — {fmtMes(mes)}</p>
+        <p className="mb-4 mt-1 text-xs text-control-ink/40">
+          Quais campanhas, conjuntos e anúncios trazem mais leads e mais
+          fechamentos, considerando todos os leads do período (independe de
+          ter investimento lançado em Criativos).
+        </p>
+
+        {criativosRanking.anuncios.length === 0 ? (
+          <EmptyState
+            icon={Sparkles}
+            title="Nenhum lead com criativo vinculado"
+            description="Vincule um criativo (campanha/conjunto/anúncio) ao criar ou editar um lead pra ver o ranking aqui."
+          />
+        ) : (
+          <div className="flex flex-col gap-6">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-control-ink/40">
+                Por campanha
+              </p>
+              <div className={tableWrapClass}>
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className={theadRowClass}>
+                      <th className={thClass}>Campanha</th>
+                      <th className={thClass}>Leads</th>
+                      <th className={thClass}>Fech.</th>
+                      <th className={thClass}>Receita</th>
+                      <th className={thClass}>Win rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {criativosRanking.campanhas.map((c) => (
+                      <tr key={c.nome} className={trClass}>
+                        <td className={`${tdClass} font-medium`}>{c.nome}</td>
+                        <td className={`${tdClass} tabular-nums`}>{c.leads}</td>
+                        <td className={`${tdClass} tabular-nums`}>{c.fechamentos}</td>
+                        <td className={`${tdClass} tabular-nums`}>{fmtMoeda(c.receita)}</td>
+                        <td className={`${tdClass} tabular-nums`}>{fmtPct(c.winRate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-control-ink/40">
+                Por conjunto
+              </p>
+              <div className={tableWrapClass}>
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className={theadRowClass}>
+                      <th className={thClass}>Conjunto</th>
+                      <th className={thClass}>Leads</th>
+                      <th className={thClass}>Fech.</th>
+                      <th className={thClass}>Receita</th>
+                      <th className={thClass}>Win rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {criativosRanking.conjuntos.map((c) => (
+                      <tr key={c.nome} className={trClass}>
+                        <td className={`${tdClass} font-medium`}>{c.nome}</td>
+                        <td className={`${tdClass} tabular-nums`}>{c.leads}</td>
+                        <td className={`${tdClass} tabular-nums`}>{c.fechamentos}</td>
+                        <td className={`${tdClass} tabular-nums`}>{fmtMoeda(c.receita)}</td>
+                        <td className={`${tdClass} tabular-nums`}>{fmtPct(c.winRate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-control-ink/40">
+                Por anúncio
+              </p>
+              <div className={tableWrapClass}>
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className={theadRowClass}>
+                      <th className={thClass}>Anúncio</th>
+                      <th className={thClass}>Campanha › Conjunto</th>
+                      <th className={thClass}>Leads</th>
+                      <th className={thClass}>Fech.</th>
+                      <th className={thClass}>Receita</th>
+                      <th className={thClass}>Win rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {criativosRanking.anuncios.map((a) => (
+                      <tr key={a.id} className={trClass}>
+                        <td className={`${tdClass} font-medium`}>{a.nome}</td>
+                        <td className={`${tdClass} text-control-ink/50`}>
+                          {[a.campanha, a.conjunto].filter(Boolean).join(" › ") || "—"}
+                        </td>
+                        <td className={`${tdClass} tabular-nums`}>{a.leads}</td>
+                        <td className={`${tdClass} tabular-nums`}>{a.fechamentos}</td>
+                        <td className={`${tdClass} tabular-nums`}>{fmtMoeda(a.receita)}</td>
+                        <td className={`${tdClass} tabular-nums`}>{fmtPct(a.winRate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

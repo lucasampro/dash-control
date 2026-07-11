@@ -40,10 +40,14 @@ export default async function CriativosPage({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className={`${cardClass} lg:col-span-1`}>
           <p className={`${sectionTitleClass} mb-4`}>Novo criativo</p>
+          <p className="mb-3 -mt-2 text-xs text-control-ink/40">
+            Representa o Anúncio no Meta Ads. Campanha e Conjunto são
+            opcionais e ajudam a agrupar o desempenho por anúncio no Dashboard.
+          </p>
           <form action={createCriativo} className="flex flex-col gap-3">
             <div>
               <label className={labelClass} htmlFor="nome">
-                Nome
+                Nome (Anúncio)
               </label>
               <input
                 id="nome"
@@ -51,6 +55,28 @@ export default async function CriativosPage({
                 required
                 className={inputClass}
                 placeholder="Ex: Depoimento_Joao"
+              />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="campanha">
+                Campanha (opcional)
+              </label>
+              <input
+                id="campanha"
+                name="campanha"
+                className={inputClass}
+                placeholder="Ex: Campanha_Leads_Julho"
+              />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="conjunto">
+                Conjunto (opcional)
+              </label>
+              <input
+                id="conjunto"
+                name="conjunto"
+                className={inputClass}
+                placeholder="Ex: Conjunto_25-45anos"
               />
             </div>
             <SubmitButton>
@@ -76,6 +102,11 @@ export default async function CriativosPage({
                   <div className="min-w-[10rem] flex-1">
                     <span className={labelClass}>Criativo</span>
                     <p className="text-sm font-medium">{c.nome}</p>
+                    {(c.campanha || c.conjunto) && (
+                      <p className="mt-0.5 text-xs text-control-ink/40">
+                        {[c.campanha, c.conjunto].filter(Boolean).join(" › ")}
+                      </p>
+                    )}
                   </div>
                   <div className="w-36">
                     <label className={labelClass}>Investimento (R$)</label>
