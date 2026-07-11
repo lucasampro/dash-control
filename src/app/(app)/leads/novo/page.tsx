@@ -27,12 +27,21 @@ export default async function NovoLeadPage() {
         Voltar para leads
       </Link>
 
-      <div className={cardClass}>
-        <h1 className="mb-1 text-lg font-semibold tracking-tight text-control-ink">Novo lead</h1>
-        <p className="mb-5 text-sm text-control-ink/45">
+      <div className={`${cardClass} relative`}>
+        <h1 className="mb-1 pr-28 text-lg font-semibold tracking-tight text-control-ink">Novo lead</h1>
+        <p className="mb-5 pr-4 text-sm text-control-ink/45">
           Depois de criado, você poderá acompanhar o lead por todo o funil.
         </p>
         <form action={createLead} className="flex flex-col gap-4">
+          <input type="checkbox" id="utmManual" name="utmManualToggle" className="peer sr-only" />
+          <label
+            htmlFor="utmManual"
+            className="absolute right-5 top-5 flex w-fit cursor-pointer items-center gap-2 rounded-full border border-control-line px-3 py-1.5 text-xs font-medium text-control-ink/60 transition hover:border-control-blue-400 peer-checked:border-control-blue-500 peer-checked:bg-control-blue-50/60 peer-checked:text-control-blue-700"
+          >
+            <span className="size-1.5 rounded-full bg-control-ink/30 peer-checked:bg-control-blue-600" />
+            UTM manual
+          </label>
+
           <div>
             <label className={labelClass} htmlFor="data">
               Data
@@ -60,7 +69,7 @@ export default async function NovoLeadPage() {
             </select>
           </div>
 
-          <div>
+          <div className="peer-checked:hidden">
             <label className={labelClass} htmlFor="criativoId">
               Criativo de origem (opcional)
             </label>
@@ -72,6 +81,33 @@ export default async function NovoLeadPage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="hidden flex-col gap-4 rounded-xl border border-dashed border-control-line p-3 peer-checked:flex">
+            <p className="text-xs text-control-ink/45">
+              Use quando o lead chegou e o Meta não identificou/atribuiu
+              automaticamente — preencha com as UTMs que você já conseguiu
+              (Anúncio é obrigatório pra criar o criativo, Campanha e Conjunto
+              são opcionais).
+            </p>
+            <div>
+              <label className={labelClass} htmlFor="utmCampanha">
+                Campanha
+              </label>
+              <input id="utmCampanha" name="utmCampanha" className={inputClass} placeholder="Ex: 44 - [LEAD] - [NTV]" />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="utmConjunto">
+                Conjunto
+              </label>
+              <input id="utmConjunto" name="utmConjunto" className={inputClass} placeholder="Ex: Melhores 25-45" />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="utmAnuncio">
+                Anúncio
+              </label>
+              <input id="utmAnuncio" name="utmAnuncio" className={inputClass} placeholder="Ex: 21 - [VIDEO] - Depoimento" />
+            </div>
           </div>
 
           <div>

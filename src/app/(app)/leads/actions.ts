@@ -46,11 +46,31 @@ function parseResultado(value: FormDataEntryValue | null): Resultado {
   throw new Error("Resultado inválido.");
 }
 
+async function resolverCriativoManual(nome: string, campanha: string | null, conjunto: string | null) {
+  const existente = await prisma.criativo.findFirst({
+    where: { nome, campanha, conjunto, metaAdId: null },
+  });
+  if (existente) return existente;
+  return prisma.criativo.create({ data: { nome, campanha, conjunto } });
+}
+
 export async function createLead(formData: FormData) {
   const data = String(formData.get("data") ?? "");
   const origem = parseOrigem(formData.get("origem"));
-  const criativoId = toNullableString(formData.get("criativoId"));
   const sdrId = toNullableString(formData.get("sdrId"));
+
+  // Se o SDR marcou "Adicionar UTM manualmente" e preencheu o Anúncio, cria/
+  // reaproveita o Criativo a partir da UTM digitada (ex: lead que o Meta não
+  // identificou automaticamente via webhook). Caso contrário, usa o Criativo
+  // escolhido no select normal.
+  const utmAnuncio = toNullableString(formData.get("utmAnuncio"));
+  let criativoId = toNullableString(formData.get("criativoId"));
+  if (utmAnuncio) {
+    const utmCampanha = toNullableString(formData.get("utmCampanha"));
+    const utmConjunto = toNullableString(formData.get("utmConjunto"));
+    const criativo = await resolverCriativoManual(utmAnuncio, utmCampanha, utmConjunto);
+    criativoId = criativo.id;
+  }
 
   if (!data) {
     throw new Error("Data é obrigatória.");
