@@ -94,6 +94,10 @@ model Lead {
   data      DateTime // data de entrada do lead
   origem    Origem
 
+  // ID do leadgen no Meta (leadgen_id), usado pelo webhook e pelo backfill
+  // histórico pra evitar criar o mesmo lead duas vezes.
+  metaLeadId String? @unique
+
   criativoId String?
   criativo   Criativo? @relation(fields: [criativoId], references: [id])
 

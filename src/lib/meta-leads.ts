@@ -62,7 +62,7 @@ async function buscarDadosAnuncio(adId: string, token: string) {
  * novo (com campanha/conjunto vindos do Meta) se for a primeira vez que esse
  * anúncio aparece.
  */
-async function resolverCriativo(adId: string | undefined, token: string) {
+export async function resolverCriativo(adId: string | undefined, token: string) {
   if (!adId) return null;
 
   const existente = await prisma.criativo.findUnique({ where: { metaAdId: adId } });
@@ -93,8 +93,14 @@ export async function processarLeadgen(value: LeadgenValue) {
 
   const criativo = await resolverCriativo(value.ad_id, token);
 
-  await prisma.lead.create({
-    data: {
+  // Upsert por metaLeadId: se o Meta reenviar o mesmo evento de webhook (ou
+  // se esse lead já tiver sido trazido pelo backfill histórico), não cria
+  // duplicado.
+  await prisma.lead.upsert({
+    where: { metaLeadId: value.leadgen_id },
+    update: {},
+    create: {
+      metaLeadId: value.leadgen_id,
       data: new Date(value.created_time * 1000),
       origem: "PAGO",
       criativoId: criativo?.id ?? null,
