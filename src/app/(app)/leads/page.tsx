@@ -8,6 +8,7 @@ import { getMesReferencia } from "@/lib/mesReferencia";
 import { MesSelector } from "@/components/ui/MesSelector";
 import { AutoRefresh } from "@/components/ui/AutoRefresh";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { LeadDetailsModal } from "@/components/ui/LeadDetailsModal";
 import { sincronizarLeads } from "./actions";
 import {
   RESULTADO_LABEL,
@@ -211,9 +212,17 @@ export default async function LeadsPage({
                     </Badge>
                   </td>
                   <td className={tdClass}>
-                    <Link href={`/leads/${lead.id}`} className={ghostButtonClass}>
-                      Editar
-                    </Link>
+                    <div className="flex items-center gap-1">
+                      <Link href={`/leads/${lead.id}`} className={ghostButtonClass}>
+                        Editar
+                      </Link>
+                      <LeadDetailsModal
+                        campanha={lead.criativo?.campanha ?? null}
+                        conjunto={lead.criativo?.conjunto ?? null}
+                        criativoNome={lead.criativo?.nome ?? null}
+                        dadosFormulario={lead.dadosFormulario as Record<string, string> | null}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}
