@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -26,6 +26,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Painel CONTROL",
   description: "Dashboard Marketing · Comercial · Operacional — Control Consultoria e Marketing",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "CONTROL",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2554f0",
 };
 
 export default function RootLayout({
