@@ -55,7 +55,21 @@ export function SidebarDesktop({ isAdmin = false }: { isAdmin?: boolean }) {
 
   return (
     <aside className="hidden shrink-0 lg:flex lg:w-60 lg:flex-col lg:gap-6 lg:border-r lg:border-control-line lg:bg-control-surface lg:px-4 lg:py-6">
-      <Brand />
+      <div className="flex items-center justify-between gap-2">
+        <Brand />
+        <div className="flex items-center gap-1">
+          <ThemeToggle className="flex size-8 shrink-0 items-center justify-center rounded-lg text-control-ink/45 transition hover:bg-control-bg hover:text-control-ink" />
+          <form action="/api/logout" method="POST">
+            <button
+              type="submit"
+              title="Sair"
+              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-control-ink/45 transition hover:bg-control-danger-100 hover:text-control-danger-600"
+            >
+              <LogOut className="size-4" strokeWidth={2} />
+            </button>
+          </form>
+        </div>
+      </div>
       <nav className="flex flex-1 flex-col gap-0.5">
         {links.map((link) => {
           const active = pathname.startsWith(link.href);
@@ -76,18 +90,6 @@ export function SidebarDesktop({ isAdmin = false }: { isAdmin?: boolean }) {
           );
         })}
       </nav>
-      <div className="flex items-center gap-2">
-        <ThemeToggle className="flex size-9 shrink-0 items-center justify-center rounded-lg text-control-ink/45 transition hover:bg-control-bg hover:text-control-ink" />
-        <form action="/api/logout" method="POST" className="min-w-0 flex-1">
-          <button
-            type="submit"
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-control-ink/45 transition hover:bg-control-danger-100 hover:text-control-danger-600"
-          >
-            <LogOut className="size-4" strokeWidth={2} />
-            Sair
-          </button>
-        </form>
-      </div>
     </aside>
   );
 }

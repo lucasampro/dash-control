@@ -321,6 +321,7 @@ export async function getCriativosRanking(inicio: Date, fim: Date) {
     campanha: string | null;
     conjunto: string | null;
     leads: number;
+    desqualificados: number;
     fechamentos: number;
     receita: number;
   };
@@ -335,10 +336,14 @@ export async function getCriativosRanking(inicio: Date, fim: Date) {
       campanha: l.criativo.campanha,
       conjunto: l.criativo.conjunto,
       leads: 0,
+      desqualificados: 0,
       fechamentos: 0,
       receita: 0,
     };
     atual.leads += 1;
+    if (l.qualificado === false) {
+      atual.desqualificados += 1;
+    }
     if (l.resultado === "GANHO") {
       atual.fechamentos += 1;
       atual.receita += l.receita ?? 0;
@@ -351,11 +356,15 @@ export async function getCriativosRanking(inicio: Date, fim: Date) {
     .sort((a, b) => b.leads - a.leads);
 
   function rollup(campo: "campanha" | "conjunto") {
-    const grupos = new Map<string, { nome: string; leads: number; fechamentos: number; receita: number }>();
+    const grupos = new Map<
+      string,
+      { nome: string; leads: number; desqualificados: number; fechamentos: number; receita: number }
+    >();
     for (const a of anuncios) {
       const nome = a[campo] ?? "Sem " + (campo === "campanha" ? "campanha" : "conjunto");
-      const atual = grupos.get(nome) ?? { nome, leads: 0, fechamentos: 0, receita: 0 };
+      const atual = grupos.get(nome) ?? { nome, leads: 0, desqualificados: 0, fechamentos: 0, receita: 0 };
       atual.leads += a.leads;
+      atual.desqualificados += a.desqualificados;
       atual.fechamentos += a.fechamentos;
       atual.receita += a.receita;
       grupos.set(nome, atual);

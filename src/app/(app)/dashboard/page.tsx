@@ -547,6 +547,7 @@ export default async function DashboardPage({
                     <tr className={theadRowClass}>
                       <th className={thClass}>Campanha</th>
                       <th className={thClass}>Leads</th>
+                      <th className={thClass}>Desqualificados</th>
                       <th className={thClass}>Fech.</th>
                       <th className={thClass}>Receita</th>
                       <th className={thClass}>Win rate</th>
@@ -557,6 +558,7 @@ export default async function DashboardPage({
                       <tr key={c.nome} className={trClass}>
                         <td className={`${tdClass} font-medium`}>{c.nome}</td>
                         <td className={`${tdClass} tabular-nums`}>{c.leads}</td>
+                        <td className={`${tdClass} tabular-nums`}>{c.desqualificados}</td>
                         <td className={`${tdClass} tabular-nums`}>{c.fechamentos}</td>
                         <td className={`${tdClass} tabular-nums`}>{fmtMoeda(c.receita)}</td>
                         <td className={`${tdClass} tabular-nums`}>{fmtPct(c.winRate)}</td>
@@ -577,6 +579,7 @@ export default async function DashboardPage({
                     <tr className={theadRowClass}>
                       <th className={thClass}>Conjunto</th>
                       <th className={thClass}>Leads</th>
+                      <th className={thClass}>Desqualificados</th>
                       <th className={thClass}>Fech.</th>
                       <th className={thClass}>Receita</th>
                       <th className={thClass}>Win rate</th>
@@ -587,6 +590,7 @@ export default async function DashboardPage({
                       <tr key={c.nome} className={trClass}>
                         <td className={`${tdClass} font-medium`}>{c.nome}</td>
                         <td className={`${tdClass} tabular-nums`}>{c.leads}</td>
+                        <td className={`${tdClass} tabular-nums`}>{c.desqualificados}</td>
                         <td className={`${tdClass} tabular-nums`}>{c.fechamentos}</td>
                         <td className={`${tdClass} tabular-nums`}>{fmtMoeda(c.receita)}</td>
                         <td className={`${tdClass} tabular-nums`}>{fmtPct(c.winRate)}</td>
@@ -608,6 +612,7 @@ export default async function DashboardPage({
                       <th className={thClass}>Anúncio</th>
                       <th className={thClass}>Campanha › Conjunto</th>
                       <th className={thClass}>Leads</th>
+                      <th className={thClass}>Desqualificados</th>
                       <th className={thClass}>Fech.</th>
                       <th className={thClass}>Receita</th>
                       <th className={thClass}>Win rate</th>
@@ -621,6 +626,7 @@ export default async function DashboardPage({
                           {[a.campanha, a.conjunto].filter(Boolean).join(" › ") || "—"}
                         </td>
                         <td className={`${tdClass} tabular-nums`}>{a.leads}</td>
+                        <td className={`${tdClass} tabular-nums`}>{a.desqualificados}</td>
                         <td className={`${tdClass} tabular-nums`}>{a.fechamentos}</td>
                         <td className={`${tdClass} tabular-nums`}>{fmtMoeda(a.receita)}</td>
                         <td className={`${tdClass} tabular-nums`}>{fmtPct(a.winRate)}</td>
