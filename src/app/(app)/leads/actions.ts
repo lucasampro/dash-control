@@ -138,3 +138,24 @@ export async function sincronizarLeads() {
   revalidatePath("/leads");
   revalidatePath("/dashboard");
 }
+
+// Atualizações rápidas de um único campo, usadas pelos badges clicáveis da
+// lista de leads (sem precisar entrar na tela de edição).
+export async function updateReuniaoStatus(id: string, status: string) {
+  await prisma.lead.update({ where: { id }, data: { reuniaoStatus: parseReuniaoStatus(status) } });
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${id}`);
+}
+
+export async function updateQualificado(id: string, value: string) {
+  await prisma.lead.update({ where: { id }, data: { qualificado: toNullableBool(value) } });
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${id}`);
+}
+
+export async function updateResultado(id: string, resultado: string) {
+  await prisma.lead.update({ where: { id }, data: { resultado: parseResultado(resultado) } });
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${id}`);
+  revalidatePath("/dashboard");
+}

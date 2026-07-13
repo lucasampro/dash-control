@@ -1,4 +1,4 @@
-type Variant = "success" | "danger" | "warning" | "neutral" | "blue" | "gold";
+export type Variant = "success" | "danger" | "warning" | "neutral" | "blue" | "gold";
 
 const styles: Record<Variant, string> = {
   success: "bg-control-success-100 text-control-success-600",

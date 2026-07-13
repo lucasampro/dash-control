@@ -9,7 +9,13 @@ import { MesSelector } from "@/components/ui/MesSelector";
 import { AutoRefresh } from "@/components/ui/AutoRefresh";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { LeadDetailsModal } from "@/components/ui/LeadDetailsModal";
-import { sincronizarLeads } from "./actions";
+import { InlineBadgeSelect } from "@/components/ui/InlineBadgeSelect";
+import {
+  sincronizarLeads,
+  updateReuniaoStatus,
+  updateQualificado,
+  updateResultado,
+} from "./actions";
 import {
   RESULTADO_LABEL,
   RESULTADO_VARIANT,
@@ -33,6 +39,24 @@ import {
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 20;
+
+const REUNIAO_OPTIONS = Object.entries(REUNIAO_LABEL).map(([value, label]) => ({
+  value,
+  label,
+  variant: REUNIAO_VARIANT[value],
+}));
+
+const RESULTADO_OPTIONS = Object.entries(RESULTADO_LABEL).map(([value, label]) => ({
+  value,
+  label,
+  variant: RESULTADO_VARIANT[value],
+}));
+
+const QUALIFICADO_OPTIONS = [
+  { value: "", label: "—", variant: "neutral" as const },
+  { value: "true", label: "Qualificado", variant: "success" as const },
+  { value: "false", label: "Desqualificado", variant: "danger" as const },
+];
 
 export default async function LeadsPage({
   searchParams,
@@ -193,23 +217,25 @@ export default async function LeadsPage({
                   <td className={tdClass}>{lead.criativo?.nome ?? "—"}</td>
                   <td className={tdClass}>{lead.sdr?.nome ?? "—"}</td>
                   <td className={tdClass}>
-                    <Badge variant={REUNIAO_VARIANT[lead.reuniaoStatus]}>
-                      {REUNIAO_LABEL[lead.reuniaoStatus]}
-                    </Badge>
+                    <InlineBadgeSelect
+                      value={lead.reuniaoStatus}
+                      options={REUNIAO_OPTIONS}
+                      action={updateReuniaoStatus.bind(null, lead.id)}
+                    />
                   </td>
                   <td className={tdClass}>
-                    {lead.qualificado === true ? (
-                      <Badge variant="success">Qualificado</Badge>
-                    ) : lead.qualificado === false ? (
-                      <Badge variant="danger">Desqualificado</Badge>
-                    ) : (
-                      "—"
-                    )}
+                    <InlineBadgeSelect
+                      value={lead.qualificado === true ? "true" : lead.qualificado === false ? "false" : ""}
+                      options={QUALIFICADO_OPTIONS}
+                      action={updateQualificado.bind(null, lead.id)}
+                    />
                   </td>
                   <td className={tdClass}>
-                    <Badge variant={RESULTADO_VARIANT[lead.resultado]}>
-                      {RESULTADO_LABEL[lead.resultado]}
-                    </Badge>
+                    <InlineBadgeSelect
+                      value={lead.resultado}
+                      options={RESULTADO_OPTIONS}
+                      action={updateResultado.bind(null, lead.id)}
+                    />
                   </td>
                   <td className={tdClass}>
                     <div className="flex items-center gap-1">

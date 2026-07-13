@@ -1,7 +1,7 @@
 // Labels e variantes de badge para os enums do Prisma — usado em tabelas e
 // telas de detalhe para uma leitura visual rápida do status.
 
-type Variant = "success" | "danger" | "warning" | "neutral" | "blue" | "gold";
+import type { Variant } from "@/components/ui/Badge";
 
 export const RESULTADO_LABEL: Record<string, string> = {
   EM_ANDAMENTO: "Em andamento",
