@@ -98,6 +98,11 @@ model Lead {
   // histórico pra evitar criar o mesmo lead duas vezes.
   metaLeadId String? @unique
 
+  // Respostas que o lead preencheu no formulário nativo do Meta (nome,
+  // telefone, e-mail etc.), guardadas como vieram (chave/valor) pra exibir
+  // na tela de detalhe. Só existe pra leads vindos do Meta (webhook/sync).
+  dadosFormulario Json?
+
   criativoId String?
   criativo   Criativo? @relation(fields: [criativoId], references: [id])
 

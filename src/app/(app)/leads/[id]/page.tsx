@@ -103,6 +103,24 @@ export default async function EditarLeadPage({
         </div>
       </div>
 
+      {/* Dados que o lead preencheu no formulário nativo do Meta (só existe pra leads vindos do Meta) */}
+      {lead.dadosFormulario &&
+        Object.keys(lead.dadosFormulario as Record<string, string>).length > 0 && (
+          <div className={cardClass}>
+            <p className={`${sectionTitleClass} mb-4`}>Dados do formulário</p>
+            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {Object.entries(lead.dadosFormulario as Record<string, string>).map(([campo, valor]) => (
+                <div key={campo}>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-control-ink/40">
+                    {campo}
+                  </dt>
+                  <dd className="mt-0.5 text-sm text-control-ink">{valor}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+
       <form action={updateLeadWithId} className="flex flex-col gap-4">
         <div className={cardClass}>
           <p className={`${sectionTitleClass} mb-4`}>Origem</p>

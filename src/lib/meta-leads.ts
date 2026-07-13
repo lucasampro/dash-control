@@ -81,17 +81,44 @@ export async function resolverCriativo(adId: string | undefined, token: string) 
   });
 }
 
+type CampoFormulario = { name: string; values: string[] };
+
 /**
- * Processa um único evento de leadgen: resolve/cria o Criativo pelo ad_id e
- * cria o Lead correspondente. Os campos de qualificação, agendamento,
- * reunião e fechamento ficam em aberto pro SDR preencher ao assumir o lead
- * — igual já acontece hoje com leads cadastrados manualmente.
+ * Busca as respostas que o lead preencheu no formulário nativo do Meta
+ * (nome, telefone, e-mail etc.) pelo leadgen_id, pra guardar e exibir na
+ * tela de detalhe do lead.
+ */
+async function buscarDadosFormulario(leadgenId: string, token: string): Promise<Record<string, string>> {
+  const url = new URL(`https://graph.facebook.com/${GRAPH_API_VERSION}/${leadgenId}`);
+  url.searchParams.set("fields", "field_data");
+  url.searchParams.set("access_token", token);
+
+  const res = await fetch(url.toString(), { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Meta Graph API (dados do formulário) respondeu ${res.status}: ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as { field_data?: CampoFormulario[] };
+  const campos: Record<string, string> = {};
+  for (const campo of data.field_data ?? []) {
+    campos[campo.name] = campo.values.join(", ");
+  }
+  return campos;
+}
+
+/**
+ * Processa um único evento de leadgen: resolve/cria o Criativo pelo ad_id,
+ * busca as respostas do formulário e cria o Lead correspondente. Os campos
+ * de qualificação, agendamento, reunião e fechamento ficam em aberto pro SDR
+ * preencher ao assumir o lead — igual já acontece hoje com leads cadastrados
+ * manualmente.
  */
 export async function processarLeadgen(value: LeadgenValue) {
   const token = process.env.META_PAGE_ACCESS_TOKEN;
   if (!token) throw new Error("META_PAGE_ACCESS_TOKEN não configurado.");
 
   const criativo = await resolverCriativo(value.ad_id, token);
+  const dadosFormulario = await buscarDadosFormulario(value.leadgen_id, token);
 
   // Upsert por metaLeadId: se o Meta reenviar o mesmo evento de webhook (ou
   // se esse lead já tiver sido trazido pelo backfill histórico), não cria
@@ -104,6 +131,7 @@ export async function processarLeadgen(value: LeadgenValue) {
       data: new Date(value.created_time * 1000),
       origem: "PAGO",
       criativoId: criativo?.id ?? null,
+      dadosFormulario,
     },
   });
 }

@@ -177,7 +177,7 @@ export default async function LeadsPage({
                 <th className={thClass}>Criativo</th>
                 <th className={thClass}>SDR</th>
                 <th className={thClass}>Reunião</th>
-                <th className={thClass}>Closer</th>
+                <th className={thClass}>Qualificação</th>
                 <th className={thClass}>Resultado</th>
                 <th className={thClass}></th>
               </tr>
@@ -196,7 +196,15 @@ export default async function LeadsPage({
                       {REUNIAO_LABEL[lead.reuniaoStatus]}
                     </Badge>
                   </td>
-                  <td className={tdClass}>{lead.closer?.nome ?? "—"}</td>
+                  <td className={tdClass}>
+                    {lead.qualificado === true ? (
+                      <Badge variant="success">Qualificado</Badge>
+                    ) : lead.qualificado === false ? (
+                      <Badge variant="danger">Desqualificado</Badge>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                   <td className={tdClass}>
                     <Badge variant={RESULTADO_VARIANT[lead.resultado]}>
                       {RESULTADO_LABEL[lead.resultado]}
