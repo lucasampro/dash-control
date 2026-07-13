@@ -15,6 +15,7 @@ import {
   updateReuniaoStatus,
   updateQualificado,
   updateResultado,
+  updateSdr,
 } from "./actions";
 import {
   RESULTADO_LABEL,
@@ -99,6 +100,11 @@ export default async function LeadsPage({
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const sdrOptions = [
+    { value: "", label: "—", variant: "neutral" as const },
+    ...sdrs.map((s) => ({ value: s.id, label: s.nome, variant: "neutral" as const })),
+  ];
 
   function pageHref(p: number) {
     const sp = new URLSearchParams();
@@ -215,7 +221,13 @@ export default async function LeadsPage({
                   </td>
                   <td className={tdClass}>{ORIGEM_LABEL[lead.origem]}</td>
                   <td className={tdClass}>{lead.criativo?.nome ?? "—"}</td>
-                  <td className={tdClass}>{lead.sdr?.nome ?? "—"}</td>
+                  <td className={tdClass}>
+                    <InlineBadgeSelect
+                      value={lead.sdrId ?? ""}
+                      options={sdrOptions}
+                      action={updateSdr.bind(null, lead.id)}
+                    />
+                  </td>
                   <td className={tdClass}>
                     <InlineBadgeSelect
                       value={lead.reuniaoStatus}

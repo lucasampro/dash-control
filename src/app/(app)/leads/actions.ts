@@ -159,3 +159,9 @@ export async function updateResultado(id: string, resultado: string) {
   revalidatePath(`/leads/${id}`);
   revalidatePath("/dashboard");
 }
+
+export async function updateSdr(id: string, sdrId: string) {
+  await prisma.lead.update({ where: { id }, data: { sdrId: toNullableString(sdrId) } });
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${id}`);
+}
