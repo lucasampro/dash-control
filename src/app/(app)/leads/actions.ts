@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Origem, ReuniaoStatus, Resultado } from "@prisma/client";
+import { sincronizarLeadsMeta } from "@/lib/meta-leads";
 
 function toNullableBool(value: FormDataEntryValue | null) {
   if (value === "true") return true;
@@ -128,4 +129,12 @@ export async function deleteLead(id: string) {
   await prisma.lead.delete({ where: { id } });
   revalidatePath("/leads");
   redirect("/leads");
+}
+
+// Sincronização manual: busca na Graph API do Meta os leads que ainda não
+// chegaram aqui (ex.: webhook fora do ar num momento) e cria os que faltam.
+export async function sincronizarLeads() {
+  await sincronizarLeadsMeta();
+  revalidatePath("/leads");
+  revalidatePath("/dashboard");
 }

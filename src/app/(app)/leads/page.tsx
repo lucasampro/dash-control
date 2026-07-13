@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Target, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Target, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -7,6 +7,8 @@ import { mesParaIntervalo } from "@/lib/metrics";
 import { getMesReferencia } from "@/lib/mesReferencia";
 import { MesSelector } from "@/components/ui/MesSelector";
 import { AutoRefresh } from "@/components/ui/AutoRefresh";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { sincronizarLeads } from "./actions";
 import {
   RESULTADO_LABEL,
   RESULTADO_VARIANT,
@@ -96,6 +98,16 @@ export default async function LeadsPage({
         </div>
         <div className="flex items-end gap-3">
           <MesSelector mes={mes} redirectTo="/leads" />
+          <form action={sincronizarLeads}>
+            <SubmitButton
+              variant="secondary"
+              savingLabel="Sincronizando..."
+              savedLabel="Sincronizado"
+            >
+              <RefreshCw className="size-4" />
+              Sincronizar
+            </SubmitButton>
+          </form>
           <Link href="/leads/novo" className={primaryButtonClass}>
             <Plus className="size-4" />
             Novo lead
