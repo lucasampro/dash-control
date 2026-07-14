@@ -14,6 +14,7 @@ import {
   sincronizarLeads,
   updateReuniaoStatus,
   updateQualificado,
+  updateAgendou,
   updateResultado,
   updateSdr,
 } from "./actions";
@@ -57,6 +58,12 @@ const QUALIFICADO_OPTIONS = [
   { value: "", label: "—", variant: "neutral" as const },
   { value: "true", label: "Qualificado", variant: "success" as const },
   { value: "false", label: "Desqualificado", variant: "danger" as const },
+];
+
+const AGENDOU_OPTIONS = [
+  { value: "", label: "—", variant: "neutral" as const },
+  { value: "true", label: "Agendou", variant: "success" as const },
+  { value: "false", label: "Não agendou", variant: "danger" as const },
 ];
 
 export default async function LeadsPage({
@@ -208,6 +215,7 @@ export default async function LeadsPage({
                 <th className={thClass}>Criativo</th>
                 <th className={thClass}>SDR</th>
                 <th className={thClass}>Reunião</th>
+                <th className={thClass}>Agendamento</th>
                 <th className={thClass}>Qualificação</th>
                 <th className={thClass}>Resultado</th>
                 <th className={thClass}></th>
@@ -233,6 +241,13 @@ export default async function LeadsPage({
                       value={lead.reuniaoStatus}
                       options={REUNIAO_OPTIONS}
                       action={updateReuniaoStatus.bind(null, lead.id)}
+                    />
+                  </td>
+                  <td className={tdClass}>
+                    <InlineBadgeSelect
+                      value={lead.agendou === true ? "true" : lead.agendou === false ? "false" : ""}
+                      options={AGENDOU_OPTIONS}
+                      action={updateAgendou.bind(null, lead.id)}
                     />
                   </td>
                   <td className={tdClass}>
