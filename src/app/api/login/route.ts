@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   }
 
-  const user = await verifyCredentials(username, password);
+  const user = await verifyCredentials(username.trim(), password);
   if (!user) {
     return NextResponse.json({ error: "Usuário ou senha incorretos." }, { status: 401 });
   }

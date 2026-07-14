@@ -3,7 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Loader2, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Loader2, Lock, User } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -72,6 +73,9 @@ export default function LoginPage() {
                 id="username"
                 type="text"
                 autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -88,13 +92,22 @@ export default function LoginPage() {
               <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-control-ink/30" />
               <input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-[10px] border border-control-line py-2 pl-9 pr-3 text-sm outline-none transition focus:border-control-blue-500 focus:ring-4 focus:ring-control-blue-500/10"
+                className="w-full rounded-[10px] border border-control-line py-2 pl-9 pr-9 text-sm outline-none transition focus:border-control-blue-500 focus:ring-4 focus:ring-control-blue-500/10"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={-1}
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-control-ink/30 transition hover:text-control-ink/60"
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
             </div>
           </div>
 
