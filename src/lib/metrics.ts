@@ -166,6 +166,26 @@ export async function getFunilDiario(mes: string): Promise<FunilDiario[]> {
   return resultado;
 }
 
+/** Resumo do dia informado (por padrão, hoje) — usado no topo do Dashboard
+ * pra dar uma visão rápida de como o dia está indo, independente do mês
+ * selecionado no filtro. */
+export async function getResumoDia(dia: Date) {
+  const inicio = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate());
+  const fim = new Date(inicio.getTime() + 24 * 60 * 60 * 1000);
+  const leads = await prisma.lead.findMany({ where: { data: { gte: inicio, lt: fim } } });
+
+  const totalLeads = leads.length;
+  const qualificados = leads.filter((l) => l.qualificado === true).length;
+  const agendados = leads.filter((l) => l.agendou === true).length;
+
+  return {
+    totalLeads,
+    qualificados,
+    pctQualif: pct(qualificados, totalLeads),
+    agendados,
+  };
+}
+
 export async function getPorSdr(inicio: Date, fim: Date) {
   const sdrs = await prisma.teamMember.findMany({
     where: { role: "SDR" },
@@ -321,6 +341,7 @@ export async function getCriativosRanking(inicio: Date, fim: Date) {
     campanha: string | null;
     conjunto: string | null;
     leads: number;
+    qualificados: number;
     desqualificados: number;
     fechamentos: number;
     receita: number;
@@ -336,12 +357,15 @@ export async function getCriativosRanking(inicio: Date, fim: Date) {
       campanha: l.criativo.campanha,
       conjunto: l.criativo.conjunto,
       leads: 0,
+      qualificados: 0,
       desqualificados: 0,
       fechamentos: 0,
       receita: 0,
     };
     atual.leads += 1;
-    if (l.qualificado === false) {
+    if (l.qualificado === true) {
+      atual.qualificados += 1;
+    } else if (l.qualificado === false) {
       atual.desqualificados += 1;
     }
     if (l.resultado === "GANHO") {
@@ -358,12 +382,13 @@ export async function getCriativosRanking(inicio: Date, fim: Date) {
   function rollup(campo: "campanha" | "conjunto") {
     const grupos = new Map<
       string,
-      { nome: string; leads: number; desqualificados: number; fechamentos: number; receita: number }
+      { nome: string; leads: number; qualificados: number; desqualificados: number; fechamentos: number; receita: number }
     >();
     for (const a of anuncios) {
       const nome = a[campo] ?? "Sem " + (campo === "campanha" ? "campanha" : "conjunto");
-      const atual = grupos.get(nome) ?? { nome, leads: 0, desqualificados: 0, fechamentos: 0, receita: 0 };
+      const atual = grupos.get(nome) ?? { nome, leads: 0, qualificados: 0, desqualificados: 0, fechamentos: 0, receita: 0 };
       atual.leads += a.leads;
+      atual.qualificados += a.qualificados;
       atual.desqualificados += a.desqualificados;
       atual.fechamentos += a.fechamentos;
       atual.receita += a.receita;

@@ -11,6 +11,7 @@ import {
   Wallet,
   LineChart,
   Calculator,
+  Trophy,
   ShieldCheck,
   LogOut,
   type LucideIcon,
@@ -20,6 +21,7 @@ import { ThemeToggle } from "./ThemeToggle";
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/leads", label: "Leads", icon: Target },
+  { href: "/ranking", label: "Ranking", icon: Trophy },
   { href: "/equipe", label: "Equipe", icon: Users },
   { href: "/criativos", label: "Criativos", icon: Sparkles },
   { href: "/investimento", label: "Investimento", icon: Wallet },

@@ -21,6 +21,7 @@ import { prisma } from "@/lib/db";
 import {
   getFunilPeriodo,
   getFunilDiario,
+  getResumoDia,
   getPorSdr,
   getPorCloser,
   getMotivosNaoFechamento,
@@ -74,6 +75,11 @@ function fmtX(v: number) {
   return `${v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}x`;
 }
 
+function fmtDataCompleta(d: Date) {
+  const label = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+  return label;
+}
+
 function fmtDia(dia: string) {
   return new Date(dia).toLocaleDateString("pt-BR", { timeZone: "UTC", day: "2-digit", month: "short" });
 }
@@ -112,7 +118,7 @@ export default async function DashboardPage({
   const mesAnt = mesAnterior(mes);
   const anterior = mesParaIntervalo(mesAnt);
 
-  const [funil, funilAnterior, porSdr, porCloser, motivos, criativos, criativosRanking, financeiro, meta, diario] =
+  const [funil, funilAnterior, porSdr, porCloser, motivos, criativos, criativosRanking, financeiro, meta, diario, hoje] =
     await Promise.all([
       getFunilPeriodo(inicio, fim),
       getFunilPeriodo(anterior.inicio, anterior.fim),
@@ -124,6 +130,7 @@ export default async function DashboardPage({
       getFinanceiroMensal(mes),
       prisma.metaMensal.findUnique({ where: { mes } }),
       getFunilDiario(mes),
+      getResumoDia(new Date()),
     ]);
 
   const meses = mesesAnteriores(mes, 6);
@@ -158,6 +165,39 @@ export default async function DashboardPage({
           <MesSelector mes={mes} redirectTo="/dashboard" />
           <CompararToggle ativo={comparar} mes={mes} />
         </div>
+      </div>
+
+      <div className={cardClass}>
+        <p className={sectionTitleClass}>Resumo de hoje — {fmtDataCompleta(new Date())}</p>
+        {hoje.totalLeads === 0 ? (
+          <div className="mt-2">
+            <EmptyState
+              icon={Users}
+              title="Nenhum lead hoje ainda"
+              description="Assim que o primeiro lead do dia entrar, o resumo aparece aqui."
+            />
+          </div>
+        ) : (
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <div>
+              <p className="text-xs text-control-ink/50">Leads hoje</p>
+              <p className="text-2xl font-semibold tabular-nums text-control-ink">{hoje.totalLeads}</p>
+            </div>
+            <div>
+              <p className="text-xs text-control-ink/50">Qualificação</p>
+              <p className="text-2xl font-semibold tabular-nums text-control-ink">
+                {hoje.qualificados}/{hoje.totalLeads}{" "}
+                <span className="text-sm font-normal text-control-ink/40">({fmtPct(hoje.pctQualif)})</span>
+              </p>
+            </div>
+            {hoje.agendados > 0 && (
+              <div>
+                <p className="text-xs text-control-ink/50">Reuniões agendadas hoje</p>
+                <p className="text-2xl font-semibold tabular-nums text-control-ink">{hoje.agendados}</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <section className="flex flex-col gap-3">
