@@ -166,12 +166,10 @@ export async function getFunilDiario(mes: string): Promise<FunilDiario[]> {
   return resultado;
 }
 
-/** Resumo do dia informado (por padrão, hoje) — usado no topo do Dashboard
- * pra dar uma visão rápida de como o dia está indo, independente do mês
- * selecionado no filtro. */
-export async function getResumoDia(dia: Date) {
-  const inicio = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate());
-  const fim = new Date(inicio.getTime() + 24 * 60 * 60 * 1000);
+/** Resumo do período informado (hoje, ontem, últimos 7 dias, semana ou um dia
+ * específico) — usado no topo do Dashboard pra dar uma visão rápida de como
+ * o período está indo, independente do mês selecionado no filtro. */
+export async function getResumoPeriodo(inicio: Date, fim: Date) {
   const leads = await prisma.lead.findMany({ where: { data: { gte: inicio, lt: fim } } });
 
   const totalLeads = leads.length;

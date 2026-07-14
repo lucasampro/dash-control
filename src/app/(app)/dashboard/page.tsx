@@ -21,7 +21,7 @@ import { prisma } from "@/lib/db";
 import {
   getFunilPeriodo,
   getFunilDiario,
-  getResumoDia,
+  getResumoPeriodo,
   getPorSdr,
   getPorCloser,
   getMotivosNaoFechamento,
@@ -39,6 +39,7 @@ import { TrendChart, type TrendPoint } from "@/components/TrendChart";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MesSelector } from "@/components/ui/MesSelector";
+import { ResumoSelector } from "@/components/ui/ResumoSelector";
 import { AutoRefresh } from "@/components/ui/AutoRefresh";
 import { CompararToggle } from "./CompararToggle";
 import {
@@ -80,6 +81,52 @@ function fmtDataCompleta(d: Date) {
   return label;
 }
 
+function toISODate(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Resolve o valor do filtro do card "Resumo" (hoje, ontem, 7d, semana ou
+ * uma data específica no formato YYYY-MM-DD) no intervalo de datas a
+ * consultar e no título a exibir. */
+function periodoResumo(valor: string | undefined) {
+  const agora = new Date();
+  const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const fimHoje = new Date(inicioHoje.getTime() + 24 * 60 * 60 * 1000);
+  const UM_DIA = 24 * 60 * 60 * 1000;
+
+  if (valor === "ontem") {
+    const inicio = new Date(inicioHoje.getTime() - UM_DIA);
+    return { inicio, fim: inicioHoje, titulo: `Resumo de ontem — ${fmtDataCompleta(inicio)}` };
+  }
+
+  if (valor === "7d") {
+    const inicio = new Date(inicioHoje.getTime() - 6 * UM_DIA);
+    return {
+      inicio,
+      fim: fimHoje,
+      titulo: `Resumo dos últimos 7 dias — ${fmtDataCompleta(inicio)} a ${fmtDataCompleta(inicioHoje)}`,
+    };
+  }
+
+  if (valor === "semana") {
+    const diasDesdeSegunda = (inicioHoje.getDay() + 6) % 7;
+    const inicio = new Date(inicioHoje.getTime() - diasDesdeSegunda * UM_DIA);
+    return {
+      inicio,
+      fim: fimHoje,
+      titulo: `Resumo desta semana — ${fmtDataCompleta(inicio)} a ${fmtDataCompleta(inicioHoje)}`,
+    };
+  }
+
+  if (valor && /^\d{4}-\d{2}-\d{2}$/.test(valor)) {
+    const [ano, mesNum, dia] = valor.split("-").map(Number);
+    const inicio = new Date(ano, mesNum - 1, dia);
+    return { inicio, fim: new Date(inicio.getTime() + UM_DIA), titulo: `Resumo de ${fmtDataCompleta(inicio)}` };
+  }
+
+  return { inicio: inicioHoje, fim: fimHoje, titulo: `Resumo de hoje — ${fmtDataCompleta(inicioHoje)}` };
+}
+
 function fmtDia(dia: string) {
   return new Date(dia).toLocaleDateString("pt-BR", { timeZone: "UTC", day: "2-digit", month: "short" });
 }
@@ -109,7 +156,7 @@ function ProgressBar({ atual, meta }: { atual: number; meta: number }) {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mes?: string }>;
+  searchParams: Promise<{ mes?: string; resumo?: string }>;
 }) {
   const params = await searchParams;
   const mes = await getMesReferencia(params.mes);
@@ -117,6 +164,8 @@ export default async function DashboardPage({
   const { inicio, fim } = mesParaIntervalo(mes);
   const mesAnt = mesAnterior(mes);
   const anterior = mesParaIntervalo(mesAnt);
+  const resumoValor = params.resumo ?? "hoje";
+  const { inicio: resumoInicio, fim: resumoFim, titulo: resumoTitulo } = periodoResumo(params.resumo);
 
   const [funil, funilAnterior, porSdr, porCloser, motivos, criativos, criativosRanking, financeiro, meta, diario, hoje] =
     await Promise.all([
@@ -130,7 +179,7 @@ export default async function DashboardPage({
       getFinanceiroMensal(mes),
       prisma.metaMensal.findUnique({ where: { mes } }),
       getFunilDiario(mes),
-      getResumoDia(new Date()),
+      getResumoPeriodo(resumoInicio, resumoFim),
     ]);
 
   const meses = mesesAnteriores(mes, 6);
@@ -168,19 +217,22 @@ export default async function DashboardPage({
       </div>
 
       <div className={cardClass}>
-        <p className={sectionTitleClass}>Resumo de hoje — {fmtDataCompleta(new Date())}</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className={sectionTitleClass}>{resumoTitulo}</p>
+          <ResumoSelector resumo={resumoValor} hoje={toISODate(new Date())} />
+        </div>
         {hoje.totalLeads === 0 ? (
           <div className="mt-2">
             <EmptyState
               icon={Users}
-              title="Nenhum lead hoje ainda"
-              description="Assim que o primeiro lead do dia entrar, o resumo aparece aqui."
+              title="Nenhum lead no período"
+              description="Assim que o primeiro lead entrar, o resumo aparece aqui."
             />
           </div>
         ) : (
           <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
             <div>
-              <p className="text-xs text-control-ink/50">Leads hoje</p>
+              <p className="text-xs text-control-ink/50">Leads</p>
               <p className="text-2xl font-semibold tabular-nums text-control-ink">{hoje.totalLeads}</p>
             </div>
             <div>
@@ -192,7 +244,7 @@ export default async function DashboardPage({
             </div>
             {hoje.agendados > 0 && (
               <div>
-                <p className="text-xs text-control-ink/50">Reuniões agendadas hoje</p>
+                <p className="text-xs text-control-ink/50">Reuniões agendadas</p>
                 <p className="text-2xl font-semibold tabular-nums text-control-ink">{hoje.agendados}</p>
               </div>
             )}

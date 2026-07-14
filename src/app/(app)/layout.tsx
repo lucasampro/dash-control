@@ -1,9 +1,14 @@
+import { redirect } from "next/navigation";
 import { SidebarDesktop, MobileTopNav } from "@/components/Sidebar";
 import { getSession } from "@/lib/auth";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
-  const isAdmin = Boolean(session?.isAdmin);
+  // Segunda camada de proteção (além do proxy): garante que nenhuma página
+  // dentro do grupo (app) renderiza sem sessão válida, mesmo que o proxy
+  // seja contornado por algum jeito.
+  if (!session) redirect("/login");
+  const isAdmin = Boolean(session.isAdmin);
 
   return (
     <div className="flex w-full flex-1">
