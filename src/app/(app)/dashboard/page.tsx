@@ -109,8 +109,9 @@ function periodoResumo(valor: string | undefined) {
   }
 
   if (valor === "semana") {
-    const diasDesdeSegunda = (inicioHoje.getDay() + 6) % 7;
-    const inicio = new Date(inicioHoje.getTime() - diasDesdeSegunda * UM_DIA);
+    // Semana começa no domingo (getDay() === 0).
+    const diasDesdeDomingo = inicioHoje.getDay();
+    const inicio = new Date(inicioHoje.getTime() - diasDesdeDomingo * UM_DIA);
     return {
       inicio,
       fim: fimHoje,
