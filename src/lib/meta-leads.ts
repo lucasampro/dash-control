@@ -1,7 +1,6 @@
 import crypto from "crypto";
 import { prisma } from "./db";
 import { enviarPushParaTodos } from "./push";
-import { nomeDoLead } from "./lead-nome";
 
 const GRAPH_API_VERSION = "v21.0";
 
@@ -147,8 +146,8 @@ export async function processarLeadgen(value: LeadgenValue) {
   const criadoAgora = lead.createdAt.getTime() === lead.updatedAt.getTime();
   if (criadoAgora) {
     await enviarPushParaTodos({
-      title: "Novo lead 🎯",
-      body: nomeDoLead(lead.dadosFormulario),
+      title: "Novo Lead Cadastrado",
+      body: "Novo lead do forms 🦷",
       url: "/leads",
     });
   }
