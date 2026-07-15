@@ -65,6 +65,21 @@ async function notificarAgendamento(
   }
 }
 
+// Dispara o push de cliente fechado só na transição do resultado pra "Ganho"
+// (não estava ganho antes), evitando re-notificar em re-salvamentos.
+async function notificarFechamento(
+  resultadoAntes: Resultado | null,
+  resultadoAgora: Resultado,
+) {
+  if (resultadoAgora === Resultado.GANHO && resultadoAntes !== Resultado.GANHO) {
+    await enviarPushParaTodos({
+      title: "NOVO CLIENTE FECHADO 🔔",
+      body: "TOCA O SINOOOOOO e ATUALIZA A META",
+      url: "/leads",
+    });
+  }
+}
+
 async function resolverCriativoManual(nome: string, campanha: string | null, conjunto: string | null) {
   const existente = await prisma.criativo.findFirst({
     where: { nome, campanha, conjunto, metaAdId: null },
@@ -124,7 +139,7 @@ export async function updateLead(id: string, formData: FormData) {
 
   const anterior = await prisma.lead.findUnique({
     where: { id },
-    select: { agendou: true, dadosFormulario: true },
+    select: { agendou: true, resultado: true, dadosFormulario: true },
   });
 
   await prisma.lead.update({
@@ -145,6 +160,7 @@ export async function updateLead(id: string, formData: FormData) {
   });
 
   await notificarAgendamento(anterior?.agendou ?? null, agendou, anterior?.dadosFormulario);
+  await notificarFechamento(anterior?.resultado ?? null, resultado);
 
   revalidatePath("/leads");
   revalidatePath(`/leads/${id}`);
@@ -194,7 +210,15 @@ export async function updateAgendou(id: string, value: string) {
 }
 
 export async function updateResultado(id: string, resultado: string) {
-  await prisma.lead.update({ where: { id }, data: { resultado: parseResultado(resultado) } });
+  const novoResultado = parseResultado(resultado);
+  const anterior = await prisma.lead.findUnique({
+    where: { id },
+    select: { resultado: true },
+  });
+  await prisma.lead.update({ where: { id }, data: { resultado: novoResultado } });
+
+  await notificarFechamento(anterior?.resultado ?? null, novoResultado);
+
   revalidatePath("/leads");
   revalidatePath(`/leads/${id}`);
   revalidatePath("/dashboard");
