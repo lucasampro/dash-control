@@ -182,6 +182,74 @@ export default async function EditarLeadPage({
         </div>
 
         <div className={cardClass}>
+          <p className={`${sectionTitleClass} mb-4`}>Contato</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className={labelClass} htmlFor="nome">
+                Nome do lead
+              </label>
+              <input
+                id="nome"
+                name="nome"
+                className={inputClass}
+                defaultValue={lead.nome ?? ""}
+                placeholder="Ex: Maria Silva"
+              />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="telefone">
+                Telefone / WhatsApp
+              </label>
+              <input
+                id="telefone"
+                name="telefone"
+                className={inputClass}
+                defaultValue={lead.telefone ?? ""}
+                placeholder="(11) 90000-0000"
+              />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="email">
+                E-mail
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                className={inputClass}
+                defaultValue={lead.email ?? ""}
+                placeholder="maria@email.com"
+              />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="instagram">
+                Instagram
+              </label>
+              <input
+                id="instagram"
+                name="instagram"
+                className={inputClass}
+                defaultValue={lead.instagram ?? ""}
+                placeholder="@maria.silva"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelClass} htmlFor="observacoes">
+                Observações
+              </label>
+              <textarea
+                id="observacoes"
+                name="observacoes"
+                rows={3}
+                className={inputClass}
+                defaultValue={lead.observacoes ?? ""}
+                placeholder="Anotações sobre o lead"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className={cardClass}>
           <p className={`${sectionTitleClass} mb-4`}>Qualificação e agendamento</p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>

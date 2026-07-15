@@ -10,6 +10,7 @@ import { AutoRefresh } from "@/components/ui/AutoRefresh";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { LeadDetailsModal } from "@/components/ui/LeadDetailsModal";
 import { InlineBadgeSelect } from "@/components/ui/InlineBadgeSelect";
+import { nomeExibicaoLead } from "@/lib/lead-nome";
 import {
   sincronizarLeads,
   updateReuniaoStatus,
@@ -211,6 +212,7 @@ export default async function LeadsPage({
             <thead>
               <tr className={theadRowClass}>
                 <th className={thClass}>Data</th>
+                <th className={thClass}>Nome</th>
                 <th className={thClass}>Origem</th>
                 <th className={thClass}>Criativo</th>
                 <th className={thClass}>SDR</th>
@@ -234,6 +236,7 @@ export default async function LeadsPage({
                       })}
                     </span>
                   </td>
+                  <td className={tdClass}>{nomeExibicaoLead(lead)}</td>
                   <td className={tdClass}>{ORIGEM_LABEL[lead.origem]}</td>
                   <td className={tdClass}>{lead.criativo?.nome ?? "—"}</td>
                   <td className={tdClass}>
@@ -300,10 +303,10 @@ export default async function LeadsPage({
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="block text-sm font-medium">
-                      {lead.data.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
-                    </span>
+                    <span className="block text-sm font-medium">{nomeExibicaoLead(lead)}</span>
                     <span className="block text-xs text-control-ink/40">
+                      {lead.data.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                      {" · "}
                       {lead.data.toLocaleTimeString("pt-BR", {
                         hour: "2-digit",
                         minute: "2-digit",

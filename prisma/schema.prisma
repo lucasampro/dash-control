@@ -103,6 +103,14 @@ model Lead {
   // na tela de detalhe. Só existe pra leads vindos do Meta (webhook/sync).
   dadosFormulario Json?
 
+  // Dados de contato do lead, preenchidos manualmente (principalmente para
+  // leads cadastrados na mão, que não têm dadosFormulario do Meta).
+  nome        String?
+  telefone    String?
+  email       String?
+  instagram   String?
+  observacoes String?
+
   criativoId String?
   criativo   Criativo? @relation(fields: [criativoId], references: [id])
 

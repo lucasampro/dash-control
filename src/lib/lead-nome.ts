@@ -18,3 +18,13 @@ export function nomeDoLead(dadosFormulario: unknown): string {
 
   return "Novo lead";
 }
+
+// Nome de exibição do lead: prioriza o nome digitado manualmente e, se não
+// houver, cai pro que veio do formulário do Meta.
+export function nomeExibicaoLead(lead: {
+  nome?: string | null;
+  dadosFormulario?: unknown;
+}): string {
+  if (lead.nome && lead.nome.trim()) return lead.nome.trim();
+  return nomeDoLead(lead.dadosFormulario);
+}

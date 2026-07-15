@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { Origem, ReuniaoStatus, Resultado } from "@prisma/client";
 import { sincronizarLeadsMeta } from "@/lib/meta-leads";
 import { enviarPushParaTodos } from "@/lib/push";
-import { nomeDoLead } from "@/lib/lead-nome";
+import { nomeExibicaoLead } from "@/lib/lead-nome";
 
 function toNullableBool(value: FormDataEntryValue | null) {
   if (value === "true") return true;
@@ -54,12 +54,12 @@ function parseResultado(value: FormDataEntryValue | null): Resultado {
 async function notificarAgendamento(
   agendouAntes: boolean | null,
   agendouAgora: boolean | null,
-  dadosFormulario: unknown,
+  lead: { nome?: string | null; dadosFormulario?: unknown },
 ) {
   if (agendouAgora === true && agendouAntes !== true) {
     await enviarPushParaTodos({
       title: "Nova Reunião Agendada ✅",
-      body: `Reunião agendada com o lead ${nomeDoLead(dadosFormulario)}`,
+      body: `Reunião agendada com o lead ${nomeExibicaoLead(lead)}`,
       url: "/leads",
     });
   }
@@ -116,6 +116,11 @@ export async function createLead(formData: FormData) {
       origem,
       criativoId,
       sdrId,
+      nome: toNullableString(formData.get("nome")),
+      telefone: toNullableString(formData.get("telefone")),
+      email: toNullableString(formData.get("email")),
+      instagram: toNullableString(formData.get("instagram")),
+      observacoes: toNullableString(formData.get("observacoes")),
     },
   });
 
@@ -139,7 +144,7 @@ export async function updateLead(id: string, formData: FormData) {
 
   const anterior = await prisma.lead.findUnique({
     where: { id },
-    select: { agendou: true, resultado: true, dadosFormulario: true },
+    select: { agendou: true, resultado: true, nome: true, dadosFormulario: true },
   });
 
   await prisma.lead.update({
@@ -149,6 +154,11 @@ export async function updateLead(id: string, formData: FormData) {
       origem,
       criativoId,
       sdrId,
+      nome: toNullableString(formData.get("nome")),
+      telefone: toNullableString(formData.get("telefone")),
+      email: toNullableString(formData.get("email")),
+      instagram: toNullableString(formData.get("instagram")),
+      observacoes: toNullableString(formData.get("observacoes")),
       qualificado,
       agendou,
       reuniaoStatus,
@@ -159,7 +169,10 @@ export async function updateLead(id: string, formData: FormData) {
     },
   });
 
-  await notificarAgendamento(anterior?.agendou ?? null, agendou, anterior?.dadosFormulario);
+  await notificarAgendamento(anterior?.agendou ?? null, agendou, {
+    nome: anterior?.nome,
+    dadosFormulario: anterior?.dadosFormulario,
+  });
   await notificarFechamento(anterior?.resultado ?? null, resultado);
 
   revalidatePath("/leads");
@@ -198,11 +211,14 @@ export async function updateAgendou(id: string, value: string) {
   const novoAgendou = toNullableBool(value);
   const anterior = await prisma.lead.findUnique({
     where: { id },
-    select: { agendou: true, dadosFormulario: true },
+    select: { agendou: true, nome: true, dadosFormulario: true },
   });
   await prisma.lead.update({ where: { id }, data: { agendou: novoAgendou } });
 
-  await notificarAgendamento(anterior?.agendou ?? null, novoAgendou, anterior?.dadosFormulario);
+  await notificarAgendamento(anterior?.agendou ?? null, novoAgendou, {
+    nome: anterior?.nome,
+    dadosFormulario: anterior?.dadosFormulario,
+  });
 
   revalidatePath("/leads");
   revalidatePath(`/leads/${id}`);

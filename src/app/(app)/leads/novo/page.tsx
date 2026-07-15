@@ -43,6 +43,48 @@ export default async function NovoLeadPage() {
           </label>
 
           <div>
+            <label className={labelClass} htmlFor="nome">
+              Nome do lead
+            </label>
+            <input id="nome" name="nome" className={inputClass} placeholder="Ex: Maria Silva" />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelClass} htmlFor="telefone">
+                Telefone / WhatsApp
+              </label>
+              <input id="telefone" name="telefone" className={inputClass} placeholder="(11) 90000-0000" />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="email">
+                E-mail
+              </label>
+              <input id="email" name="email" type="email" className={inputClass} placeholder="maria@email.com" />
+            </div>
+          </div>
+
+          <div>
+            <label className={labelClass} htmlFor="instagram">
+              Instagram
+            </label>
+            <input id="instagram" name="instagram" className={inputClass} placeholder="@maria.silva" />
+          </div>
+
+          <div>
+            <label className={labelClass} htmlFor="observacoes">
+              Observações
+            </label>
+            <textarea
+              id="observacoes"
+              name="observacoes"
+              rows={3}
+              className={inputClass}
+              placeholder="Anotações sobre o lead"
+            />
+          </div>
+
+          <div>
             <label className={labelClass} htmlFor="data">
               Data
             </label>
