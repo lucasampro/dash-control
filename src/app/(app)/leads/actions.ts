@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { Origem, ReuniaoStatus, Resultado } from "@prisma/client";
 import { sincronizarLeadsMeta } from "@/lib/meta-leads";
 import { enviarPushParaTodos } from "@/lib/push";
+import { enviarEventoFunilMeta } from "@/lib/meta-capi";
 import { nomeExibicaoLead } from "@/lib/lead-nome";
 
 function toNullableBool(value: FormDataEntryValue | null) {
@@ -87,6 +88,40 @@ async function notificarFechamento(
   }
 }
 
+// Envia eventos de funil pro Meta (Conversions API) nas viradas de estado,
+// casando pelo Meta Lead ID. Só dispara na transição (não re-envia em
+// re-salvamentos), e é no-op se o lead não veio do Meta ou faltam credenciais.
+async function enviarFunilMeta(
+  antes: {
+    qualificado: boolean | null;
+    agendou: boolean | null;
+    reuniaoStatus: ReuniaoStatus;
+    resultado: Resultado;
+  } | null,
+  depois: {
+    qualificado: boolean | null;
+    agendou: boolean | null;
+    reuniaoStatus: ReuniaoStatus;
+    resultado: Resultado;
+    receita: number | null;
+  },
+  metaLeadId: string | null | undefined,
+) {
+  if (!metaLeadId) return;
+  if (depois.qualificado === true && antes?.qualificado !== true) {
+    await enviarEventoFunilMeta({ metaLeadId, stage: "qualificado" });
+  }
+  if (depois.agendou === true && antes?.agendou !== true) {
+    await enviarEventoFunilMeta({ metaLeadId, stage: "agendou" });
+  }
+  if (depois.reuniaoStatus === ReuniaoStatus.FEITA && antes?.reuniaoStatus !== ReuniaoStatus.FEITA) {
+    await enviarEventoFunilMeta({ metaLeadId, stage: "reuniao_feita" });
+  }
+  if (depois.resultado === Resultado.GANHO && antes?.resultado !== Resultado.GANHO) {
+    await enviarEventoFunilMeta({ metaLeadId, stage: "ganho", valor: depois.receita });
+  }
+}
+
 async function resolverCriativoManual(nome: string, campanha: string | null, conjunto: string | null) {
   const existente = await prisma.criativo.findFirst({
     where: { nome, campanha, conjunto, metaAdId: null },
@@ -151,7 +186,15 @@ export async function updateLead(id: string, formData: FormData) {
 
   const anterior = await prisma.lead.findUnique({
     where: { id },
-    select: { agendou: true, resultado: true, nome: true, dadosFormulario: true },
+    select: {
+      qualificado: true,
+      agendou: true,
+      reuniaoStatus: true,
+      resultado: true,
+      metaLeadId: true,
+      nome: true,
+      dadosFormulario: true,
+    },
   });
 
   await prisma.lead.update({
@@ -181,6 +224,18 @@ export async function updateLead(id: string, formData: FormData) {
     dadosFormulario: anterior?.dadosFormulario,
   });
   await notificarFechamento(anterior?.resultado ?? null, resultado);
+  await enviarFunilMeta(
+    anterior
+      ? {
+          qualificado: anterior.qualificado,
+          agendou: anterior.agendou,
+          reuniaoStatus: anterior.reuniaoStatus,
+          resultado: anterior.resultado,
+        }
+      : null,
+    { qualificado, agendou, reuniaoStatus, resultado, receita },
+    anterior?.metaLeadId,
+  );
 
   revalidatePath("/leads");
   revalidatePath(`/leads/${id}`);
@@ -203,13 +258,33 @@ export async function sincronizarLeads() {
 // Atualizações rápidas de um único campo, usadas pelos badges clicáveis da
 // lista de leads (sem precisar entrar na tela de edição).
 export async function updateReuniaoStatus(id: string, status: string) {
-  await prisma.lead.update({ where: { id }, data: { reuniaoStatus: parseReuniaoStatus(status) } });
+  const novoStatus = parseReuniaoStatus(status);
+  const anterior = await prisma.lead.findUnique({
+    where: { id },
+    select: { reuniaoStatus: true, metaLeadId: true },
+  });
+  await prisma.lead.update({ where: { id }, data: { reuniaoStatus: novoStatus } });
+
+  if (novoStatus === ReuniaoStatus.FEITA && anterior?.reuniaoStatus !== ReuniaoStatus.FEITA) {
+    await enviarEventoFunilMeta({ metaLeadId: anterior?.metaLeadId, stage: "reuniao_feita" });
+  }
+
   revalidatePath("/leads");
   revalidatePath(`/leads/${id}`);
 }
 
 export async function updateQualificado(id: string, value: string) {
-  await prisma.lead.update({ where: { id }, data: { qualificado: toNullableBool(value) } });
+  const novoQualificado = toNullableBool(value);
+  const anterior = await prisma.lead.findUnique({
+    where: { id },
+    select: { qualificado: true, metaLeadId: true },
+  });
+  await prisma.lead.update({ where: { id }, data: { qualificado: novoQualificado } });
+
+  if (novoQualificado === true && anterior?.qualificado !== true) {
+    await enviarEventoFunilMeta({ metaLeadId: anterior?.metaLeadId, stage: "qualificado" });
+  }
+
   revalidatePath("/leads");
   revalidatePath(`/leads/${id}`);
 }
@@ -218,7 +293,7 @@ export async function updateAgendou(id: string, value: string) {
   const novoAgendou = toNullableBool(value);
   const anterior = await prisma.lead.findUnique({
     where: { id },
-    select: { agendou: true, nome: true, dadosFormulario: true },
+    select: { agendou: true, metaLeadId: true, nome: true, dadosFormulario: true },
   });
   await prisma.lead.update({ where: { id }, data: { agendou: novoAgendou } });
 
@@ -226,6 +301,10 @@ export async function updateAgendou(id: string, value: string) {
     nome: anterior?.nome,
     dadosFormulario: anterior?.dadosFormulario,
   });
+
+  if (novoAgendou === true && anterior?.agendou !== true) {
+    await enviarEventoFunilMeta({ metaLeadId: anterior?.metaLeadId, stage: "agendou" });
+  }
 
   revalidatePath("/leads");
   revalidatePath(`/leads/${id}`);
@@ -236,11 +315,19 @@ export async function updateResultado(id: string, resultado: string) {
   const novoResultado = parseResultado(resultado);
   const anterior = await prisma.lead.findUnique({
     where: { id },
-    select: { resultado: true },
+    select: { resultado: true, metaLeadId: true, receita: true },
   });
   await prisma.lead.update({ where: { id }, data: { resultado: novoResultado } });
 
   await notificarFechamento(anterior?.resultado ?? null, novoResultado);
+
+  if (novoResultado === Resultado.GANHO && anterior?.resultado !== Resultado.GANHO) {
+    await enviarEventoFunilMeta({
+      metaLeadId: anterior?.metaLeadId,
+      stage: "ganho",
+      valor: anterior?.receita,
+    });
+  }
 
   revalidatePath("/leads");
   revalidatePath(`/leads/${id}`);
