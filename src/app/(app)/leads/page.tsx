@@ -126,7 +126,7 @@ export default async function LeadsPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <AutoRefresh />
+      <AutoRefresh intervalMs={60000} syncAction={sincronizarLeads} />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-control-ink">Leads</h1>

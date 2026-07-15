@@ -41,6 +41,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { MesSelector } from "@/components/ui/MesSelector";
 import { ResumoSelector } from "@/components/ui/ResumoSelector";
 import { AutoRefresh } from "@/components/ui/AutoRefresh";
+import { sincronizarLeads } from "@/app/(app)/leads/actions";
 import { CompararToggle } from "./CompararToggle";
 import {
   sectionTitleClass,
@@ -201,7 +202,7 @@ export default async function DashboardPage({
 
   return (
     <div className="flex flex-col gap-8">
-      <AutoRefresh />
+      <AutoRefresh intervalMs={60000} syncAction={sincronizarLeads} />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-control-ink">
