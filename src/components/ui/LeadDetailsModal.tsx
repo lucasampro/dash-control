@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Eye } from "lucide-react";
+import { X } from "lucide-react";
 import { ghostButtonClass, subtleCardClass, sectionTitleClass } from "@/lib/ui";
 
 type LeadDetailsModalProps = {
@@ -24,8 +24,7 @@ export function LeadDetailsModal({
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={ghostButtonClass}>
-        <Eye className="size-3.5" />
+      <button type="button" onClick={() => setOpen(true)} className={`${ghostButtonClass} whitespace-nowrap`}>
         Ver detalhes
       </button>
 
