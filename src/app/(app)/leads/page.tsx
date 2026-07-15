@@ -238,7 +238,14 @@ export default async function LeadsPage({
                   </td>
                   <td className={tdClass}>{nomeExibicaoLead(lead)}</td>
                   <td className={tdClass}>{ORIGEM_LABEL[lead.origem]}</td>
-                  <td className={tdClass}>{lead.criativo?.nome ?? "—"}</td>
+                  <td className={tdClass}>
+                    <span
+                      className="line-clamp-4 max-w-[16rem]"
+                      title={lead.criativo?.nome ?? undefined}
+                    >
+                      {lead.criativo?.nome ?? "—"}
+                    </span>
+                  </td>
                   <td className={tdClass}>
                     <InlineBadgeSelect
                       value={lead.sdrId ?? ""}
