@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { NotificationBell } from "./notificacoes/NotificationBell";
 
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -60,6 +61,7 @@ export function SidebarDesktop({ isAdmin = false }: { isAdmin?: boolean }) {
       <div className="flex items-center justify-between gap-2">
         <Brand />
         <div className="flex items-center gap-1">
+          <NotificationBell />
           <ThemeToggle className="flex size-8 shrink-0 items-center justify-center rounded-lg text-control-ink/45 transition hover:bg-control-bg hover:text-control-ink" />
           <form action="/api/logout" method="POST">
             <button
@@ -105,6 +107,7 @@ export function MobileTopNav({ isAdmin = false }: { isAdmin?: boolean }) {
       <div className="flex items-center justify-between gap-3 px-4 pt-4">
         <Brand />
         <div className="flex items-center gap-1.5">
+          <NotificationBell />
           <ThemeToggle className="flex size-8 shrink-0 items-center justify-center rounded-full text-control-ink/45 transition hover:bg-control-bg hover:text-control-ink" />
           <form action="/api/logout" method="POST">
             <button

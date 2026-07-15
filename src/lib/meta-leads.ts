@@ -1,5 +1,7 @@
 import crypto from "crypto";
 import { prisma } from "./db";
+import { enviarPushParaTodos } from "./push";
+import { nomeDoLead } from "./lead-nome";
 
 const GRAPH_API_VERSION = "v21.0";
 
@@ -117,13 +119,17 @@ export async function processarLeadgen(value: LeadgenValue) {
   const token = process.env.META_PAGE_ACCESS_TOKEN;
   if (!token) throw new Error("META_PAGE_ACCESS_TOKEN não configurado.");
 
+  // Se o lead já existe (webhook reenviado ou backfill), não faz nada nem
+  // notifica de novo.
+  const existente = await prisma.lead.findUnique({ where: { metaLeadId: value.leadgen_id } });
+  if (existente) return;
+
   const criativo = await resolverCriativo(value.ad_id, token);
   const dadosFormulario = await buscarDadosFormulario(value.leadgen_id, token);
 
-  // Upsert por metaLeadId: se o Meta reenviar o mesmo evento de webhook (ou
-  // se esse lead já tiver sido trazido pelo backfill histórico), não cria
-  // duplicado.
-  await prisma.lead.upsert({
+  // Upsert por metaLeadId como rede de segurança contra corrida entre webhook
+  // e sync rodando ao mesmo tempo (o findUnique acima já cobre o caso comum).
+  const lead = await prisma.lead.upsert({
     where: { metaLeadId: value.leadgen_id },
     update: {},
     create: {
@@ -133,7 +139,19 @@ export async function processarLeadgen(value: LeadgenValue) {
       criativoId: criativo?.id ?? null,
       dadosFormulario,
     },
+    select: { createdAt: true, updatedAt: true, dadosFormulario: true },
   });
+
+  // Só notifica quando o upsert realmente criou (createdAt === updatedAt);
+  // se caiu no update (corrida), não dispara push duplicado.
+  const criadoAgora = lead.createdAt.getTime() === lead.updatedAt.getTime();
+  if (criadoAgora) {
+    await enviarPushParaTodos({
+      title: "Novo lead 🎯",
+      body: nomeDoLead(lead.dadosFormulario),
+      url: "/leads",
+    });
+  }
 }
 
 export async function processarWebhookMeta(payload: WebhookPayload) {

@@ -180,4 +180,20 @@ model User {
   isAdmin      Boolean  @default(false)
   ativo        Boolean  @default(true)
   createdAt    DateTime @default(now())
+
+  // Última vez que o usuário abriu/marcou as notificações como vistas — usado
+  // pelo sino do painel pra contar quantos leads novos entraram desde então.
+  notificacoesVistasEm DateTime?
+}
+
+// Inscrição de Web Push (PWA) de um dispositivo, pra enviar notificação de
+// lead novo no celular mesmo com o app fechado. Uma linha por navegador/app
+// que ativou as notificações.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  username  String? // quem ativou (informativo); a notificação vai pra todos
+  createdAt DateTime @default(now())
 }
