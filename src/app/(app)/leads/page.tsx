@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Plus, Target, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -42,6 +43,19 @@ export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 20;
 
+type LeadComRelacoes = Prisma.LeadGetPayload<{
+  include: { sdr: true; closer: true; criativo: true };
+}>;
+
+// Normaliza pra busca: minúsculas e sem acento, pra "joao" achar "João".
+function normalizar(texto: string) {
+  return texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 const REUNIAO_OPTIONS = Object.entries(REUNIAO_LABEL).map(([value, label]) => ({
   value,
   label,
@@ -74,6 +88,7 @@ export default async function LeadsPage({
     closerId?: string;
     origem?: string;
     resultado?: string;
+    q?: string;
     page?: string;
     mes?: string;
   }>;
@@ -82,6 +97,7 @@ export default async function LeadsPage({
   const page = Math.max(1, Number(params.page ?? "1") || 1);
   const mes = await getMesReferencia(params.mes);
   const { inicio, fim } = mesParaIntervalo(mes);
+  const busca = (params.q ?? "").trim();
 
   const where = {
     data: { gte: inicio, lt: fim },
@@ -93,18 +109,38 @@ export default async function LeadsPage({
       : {}),
   };
 
-  const [leads, total, sdrs, closers] = await Promise.all([
-    prisma.lead.findMany({
-      where,
-      orderBy: { data: "desc" },
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-      include: { sdr: true, closer: true, criativo: true },
-    }),
-    prisma.lead.count({ where }),
+  const [sdrs, closers] = await Promise.all([
     prisma.teamMember.findMany({ where: { role: "SDR" }, orderBy: { nome: "asc" } }),
     prisma.teamMember.findMany({ where: { role: "CLOSER" }, orderBy: { nome: "asc" } }),
   ]);
+
+  let leads: LeadComRelacoes[];
+  let total: number;
+  if (busca) {
+    // O nome de leads do Meta fica no JSON do formulário (a coluna `nome`
+    // costuma ser nula), então a busca é feita em memória sobre o nome de
+    // exibição. O conjunto já é limitado ao mês, então o custo é baixo.
+    const todos = await prisma.lead.findMany({
+      where,
+      orderBy: { data: "desc" },
+      include: { sdr: true, closer: true, criativo: true },
+    });
+    const alvo = normalizar(busca);
+    const filtrados = todos.filter((l) => normalizar(nomeExibicaoLead(l)).includes(alvo));
+    total = filtrados.length;
+    leads = filtrados.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  } else {
+    [leads, total] = await Promise.all([
+      prisma.lead.findMany({
+        where,
+        orderBy: { data: "desc" },
+        skip: (page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
+        include: { sdr: true, closer: true, criativo: true },
+      }),
+      prisma.lead.count({ where }),
+    ]);
+  }
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -114,6 +150,7 @@ export default async function LeadsPage({
     if (params.closerId) sp.set("closerId", params.closerId);
     if (params.origem) sp.set("origem", params.origem);
     if (params.resultado) sp.set("resultado", params.resultado);
+    if (busca) sp.set("q", busca);
     sp.set("mes", mes);
     sp.set("page", String(p));
     return `/leads?${sp.toString()}`;
@@ -150,6 +187,16 @@ export default async function LeadsPage({
 
       <form className={`${cardClass} flex flex-wrap items-end gap-3`} method="GET">
         <input type="hidden" name="mes" value={mes} />
+        <div className="min-w-[12rem] flex-1">
+          <label className={labelClass}>Buscar</label>
+          <input
+            type="search"
+            name="q"
+            defaultValue={busca}
+            placeholder="Nome do lead"
+            className={inputClass}
+          />
+        </div>
         <div className="min-w-[9rem]">
           <label className={labelClass}>SDR</label>
           <select name="sdrId" defaultValue={params.sdrId ?? ""} className={inputClass}>
@@ -192,7 +239,7 @@ export default async function LeadsPage({
         <button type="submit" className={primaryButtonClass}>
           Filtrar
         </button>
-        {(params.sdrId || params.closerId || params.origem || params.resultado) && (
+        {(params.sdrId || params.closerId || params.origem || params.resultado || busca) && (
           <Link href={`/leads?mes=${mes}`} className={ghostButtonClass}>
             Limpar filtros
           </Link>
