@@ -28,3 +28,25 @@ export function nomeExibicaoLead(lead: {
   if (lead.nome && lead.nome.trim()) return lead.nome.trim();
   return nomeDoLead(lead.dadosFormulario);
 }
+
+// Busca no formulário do Meta o primeiro campo cuja chave casa com o regex.
+// Retorna null (em vez de um texto genérico) pra usar como valor inicial de
+// input — assim o campo fica vazio quando não há dado, sem "Novo lead".
+function valorFormulario(dadosFormulario: unknown, regex: RegExp): string | null {
+  if (!dadosFormulario || typeof dadosFormulario !== "object") return null;
+  const campos = dadosFormulario as Record<string, string>;
+  const chave = Object.keys(campos).find((k) => regex.test(k));
+  return chave && campos[chave] ? campos[chave] : null;
+}
+
+export function nomeFormulario(dadosFormulario: unknown): string | null {
+  return valorFormulario(dadosFormulario, /(full_?name|nome|name)/i);
+}
+
+export function emailFormulario(dadosFormulario: unknown): string | null {
+  return valorFormulario(dadosFormulario, /e-?mail/i);
+}
+
+export function telefoneFormulario(dadosFormulario: unknown): string | null {
+  return valorFormulario(dadosFormulario, /(phone|telefone|whats)/i);
+}

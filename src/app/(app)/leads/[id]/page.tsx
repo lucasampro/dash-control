@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Check } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { updateLead } from "../actions";
+import { nomeFormulario, emailFormulario, telefoneFormulario } from "@/lib/lead-nome";
 import { DeleteButton } from "../DeleteButton";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -53,6 +54,13 @@ export default async function EditarLeadPage({
   if (!lead) notFound();
 
   const updateLeadWithId = updateLead.bind(null, lead.id);
+
+  // Leads vindos do Meta trazem nome/telefone/e-mail dentro de dadosFormulario.
+  // Reaproveitamos esses valores como padrão dos campos de contato (quando o SDR
+  // ainda não digitou nada manualmente), evitando redigitar o que já veio.
+  const nomeInicial = lead.nome ?? nomeFormulario(lead.dadosFormulario) ?? "";
+  const telefoneInicial = lead.telefone ?? telefoneFormulario(lead.dadosFormulario) ?? "";
+  const emailInicial = lead.email ?? emailFormulario(lead.dadosFormulario) ?? "";
 
   const steps = [
     { label: "Origem", done: true },
@@ -192,7 +200,7 @@ export default async function EditarLeadPage({
                 id="nome"
                 name="nome"
                 className={inputClass}
-                defaultValue={lead.nome ?? ""}
+                defaultValue={nomeInicial}
                 placeholder="Ex: Maria Silva"
               />
             </div>
@@ -204,7 +212,7 @@ export default async function EditarLeadPage({
                 id="telefone"
                 name="telefone"
                 className={inputClass}
-                defaultValue={lead.telefone ?? ""}
+                defaultValue={telefoneInicial}
                 placeholder="(11) 90000-0000"
               />
             </div>
@@ -217,7 +225,7 @@ export default async function EditarLeadPage({
                 name="email"
                 type="email"
                 className={inputClass}
-                defaultValue={lead.email ?? ""}
+                defaultValue={emailInicial}
                 placeholder="maria@email.com"
               />
             </div>
