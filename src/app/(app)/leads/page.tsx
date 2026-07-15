@@ -282,7 +282,7 @@ export default async function LeadsPage({
                     />
                   </td>
                   <td className={tdClass}>
-                    <div className="flex items-center gap-1">
+                    <div className="flex flex-col items-start gap-1">
                       <Link href={`/leads/${lead.id}`} className={ghostButtonClass}>
                         Editar
                       </Link>
