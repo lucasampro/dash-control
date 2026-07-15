@@ -17,7 +17,6 @@ import {
   updateQualificado,
   updateAgendou,
   updateResultado,
-  updateSdr,
 } from "./actions";
 import {
   RESULTADO_LABEL,
@@ -108,11 +107,6 @@ export default async function LeadsPage({
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
-  const sdrOptions = [
-    { value: "", label: "—", variant: "neutral" as const },
-    ...sdrs.map((s) => ({ value: s.id, label: s.nome, variant: "neutral" as const })),
-  ];
 
   function pageHref(p: number) {
     const sp = new URLSearchParams();
@@ -215,7 +209,6 @@ export default async function LeadsPage({
                 <th className={thClass}>Nome</th>
                 <th className={thClass}>Origem</th>
                 <th className={thClass}>Criativo</th>
-                <th className={thClass}>SDR</th>
                 <th className={thClass}>Reunião</th>
                 <th className={thClass}>Agendamento</th>
                 <th className={thClass}>Qualificação</th>
@@ -245,13 +238,6 @@ export default async function LeadsPage({
                     >
                       {lead.criativo?.nome ?? "—"}
                     </span>
-                  </td>
-                  <td className={tdClass}>
-                    <InlineBadgeSelect
-                      value={lead.sdrId ?? ""}
-                      options={sdrOptions}
-                      action={updateSdr.bind(null, lead.id)}
-                    />
                   </td>
                   <td className={tdClass}>
                     <InlineBadgeSelect
