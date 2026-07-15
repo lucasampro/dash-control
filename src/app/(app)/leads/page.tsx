@@ -225,7 +225,14 @@ export default async function LeadsPage({
               {leads.map((lead) => (
                 <tr key={lead.id} className={trClass}>
                   <td className={`${tdClass} tabular-nums`}>
-                    {lead.data.toLocaleDateString("pt-BR")}
+                    {lead.data.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                    <span className="block text-xs text-control-ink/40">
+                      {lead.data.toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        timeZone: "America/Sao_Paulo",
+                      })}
+                    </span>
                   </td>
                   <td className={tdClass}>{ORIGEM_LABEL[lead.origem]}</td>
                   <td className={tdClass}>{lead.criativo?.nome ?? "—"}</td>
@@ -292,7 +299,18 @@ export default async function LeadsPage({
                 className="flex flex-col gap-2 rounded-xl border border-control-line p-3 transition hover:bg-control-blue-50/40"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{lead.data.toLocaleDateString("pt-BR")}</span>
+                  <div>
+                    <span className="block text-sm font-medium">
+                      {lead.data.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                    </span>
+                    <span className="block text-xs text-control-ink/40">
+                      {lead.data.toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        timeZone: "America/Sao_Paulo",
+                      })}
+                    </span>
+                  </div>
                   <Badge variant={RESULTADO_VARIANT[lead.resultado]}>
                     {RESULTADO_LABEL[lead.resultado]}
                   </Badge>
