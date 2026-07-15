@@ -9,9 +9,27 @@
 // conversão". Enquanto META_DATASET_ID / META_CAPI_TOKEN não existirem, o envio
 // é um no-op (não quebra o salvamento do lead).
 
+import { prisma } from "@/lib/db";
+
 const GRAPH_API_VERSION = "v21.0";
 
 export type FunilStage = "qualificado" | "agendou" | "reuniao_feita" | "ganho";
+
+// Lê a configuração da CAPI: primeiro do banco (editável no Admin), com
+// fallback pras variáveis de ambiente. Assim o Lucas troca Pixel/token pelo
+// painel sem redeploy, mas o env continua valendo se o banco estiver vazio.
+async function getConfigCapi(): Promise<{
+  datasetId: string | null;
+  token: string | null;
+  sourceName: string;
+}> {
+  const cfg = await prisma.integracaoMeta.findUnique({ where: { id: "meta" } });
+  const datasetId = cfg?.datasetId || process.env.META_DATASET_ID || null;
+  const token = cfg?.capiToken || process.env.META_CAPI_TOKEN || null;
+  const sourceName =
+    cfg?.sourceName || process.env.META_CAPI_SOURCE_NAME || "Painel CONTROL";
+  return { datasetId, token, sourceName };
+}
 
 // Nome do evento enviado ao Meta pra cada estágio. É esse nome que aparece no
 // Events Manager e que o Lucas escolhe no Ads Manager como evento de otimização
@@ -29,8 +47,7 @@ export async function enviarEventoFunilMeta(params: {
   eventTime?: Date;
   valor?: number | null;
 }): Promise<void> {
-  const datasetId = process.env.META_DATASET_ID;
-  const token = process.env.META_CAPI_TOKEN;
+  const { datasetId, token, sourceName } = await getConfigCapi();
 
   // Sem credenciais ou sem lead vindo do Meta (leadgen_id), não há o que enviar.
   if (!datasetId || !token || !params.metaLeadId) return;
@@ -38,7 +55,7 @@ export async function enviarEventoFunilMeta(params: {
   const custom_data: Record<string, unknown> = {
     // Campos exigidos pelo Meta pra eventos de CRM (Leads de conversão).
     event_source: "crm",
-    lead_event_source: process.env.META_CAPI_SOURCE_NAME ?? "Painel CONTROL",
+    lead_event_source: sourceName,
   };
 
   // No fechamento, manda o valor da venda pra otimizar por receita.

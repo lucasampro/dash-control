@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { UserPlus, ShieldCheck } from "lucide-react";
+import { UserPlus, ShieldCheck, Plug } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { getMesReferencia } from "@/lib/mesReferencia";
-import { createUser } from "./actions";
+import { createUser, upsertIntegracaoMeta } from "./actions";
 import { upsertMetaMensal } from "../financeiro/actions";
 import { ToggleUserButton } from "./ToggleUserButton";
 import { ResetPasswordForm } from "./ResetPasswordForm";
@@ -25,9 +25,10 @@ export default async function AdminPage({
   const params = await searchParams;
   const mes = await getMesReferencia(params.mes);
 
-  const [usuarios, meta] = await Promise.all([
+  const [usuarios, meta, integracaoMeta] = await Promise.all([
     prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.metaMensal.findUnique({ where: { mes } }),
+    prisma.integracaoMeta.findUnique({ where: { id: "meta" } }),
   ]);
 
   return (
@@ -159,6 +160,68 @@ export default async function AdminPage({
 
           <div className="col-span-full mt-2">
             <SubmitButton>Salvar metas</SubmitButton>
+          </div>
+        </form>
+      </div>
+
+      <div className={cardClass}>
+        <div className="mb-1 flex items-center gap-2">
+          <Plug className="size-4 text-control-blue-700" />
+          <p className={sectionTitleClass}>Integrações — Meta (Conversões)</p>
+        </div>
+        <p className="mb-4 text-sm text-control-ink/45">
+          Envio de eventos de funil de volta pro Meta (Conversions API) pra
+          otimizar a campanha &quot;Leads de conversão&quot;. Pegue o Pixel/Dataset ID e
+          gere o token no Gerenciador de Eventos do Meta.
+        </p>
+        <form action={upsertIntegracaoMeta} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className={labelClass} htmlFor="datasetId">
+              Pixel / Dataset ID
+            </label>
+            <input
+              id="datasetId"
+              name="datasetId"
+              defaultValue={integracaoMeta?.datasetId ?? ""}
+              className={inputClass}
+              placeholder="Ex: 1234567890"
+            />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="capiToken">
+              Token da Conversions API
+            </label>
+            <input
+              id="capiToken"
+              name="capiToken"
+              type="password"
+              autoComplete="off"
+              className={inputClass}
+              placeholder={integracaoMeta?.capiToken ? "•••••••• (configurado)" : "Cole o token"}
+            />
+            <p className="mt-1 text-xs text-control-ink/40">
+              {integracaoMeta?.capiToken
+                ? "Deixe em branco pra manter o token atual."
+                : "Nenhum token configurado ainda."}
+            </p>
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelClass} htmlFor="sourceName">
+              Nome da origem (opcional)
+            </label>
+            <input
+              id="sourceName"
+              name="sourceName"
+              defaultValue={integracaoMeta?.sourceName ?? ""}
+              className={inputClass}
+              placeholder="Painel CONTROL"
+            />
+          </div>
+          <div className="col-span-full mt-2 flex items-center gap-3">
+            <SubmitButton>Salvar integração</SubmitButton>
+            <Badge variant={integracaoMeta?.datasetId && integracaoMeta?.capiToken ? "success" : "neutral"}>
+              {integracaoMeta?.datasetId && integracaoMeta?.capiToken ? "Ativa" : "Não configurada"}
+            </Badge>
           </div>
         </form>
       </div>

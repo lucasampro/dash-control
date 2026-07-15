@@ -53,3 +53,25 @@ export async function resetUserPassword(formData: FormData) {
 
   revalidatePath("/admin");
 }
+
+// Salva a configuração da integração com o Meta (Conversions API). Se o campo
+// do token vier em branco, mantém o token que já está salvo — assim o Lucas
+// pode ajustar só o Pixel sem precisar re-digitar o token toda vez.
+export async function upsertIntegracaoMeta(formData: FormData) {
+  await requireAdmin();
+
+  const datasetId = String(formData.get("datasetId") ?? "").trim() || null;
+  const sourceName = String(formData.get("sourceName") ?? "").trim() || null;
+  const tokenInput = String(formData.get("capiToken") ?? "").trim();
+
+  const atual = await prisma.integracaoMeta.findUnique({ where: { id: "meta" } });
+  const capiToken = tokenInput || atual?.capiToken || null;
+
+  await prisma.integracaoMeta.upsert({
+    where: { id: "meta" },
+    create: { id: "meta", datasetId, capiToken, sourceName },
+    update: { datasetId, capiToken, sourceName },
+  });
+
+  revalidatePath("/admin");
+}

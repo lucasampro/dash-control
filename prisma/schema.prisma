@@ -194,6 +194,17 @@ model User {
   notificacoesVistasEm DateTime?
 }
 
+// Configuração da integração com o Meta (Conversions API), editável pelo Admin
+// sem precisar redeploy. Singleton: sempre a linha de id "meta". Se vazio, o
+// envio de eventos cai no fallback das variáveis de ambiente (ou é no-op).
+model IntegracaoMeta {
+  id           String   @id @default("meta")
+  datasetId    String? // Pixel / Dataset ID do Events Manager
+  capiToken    String? // token da Conversions API desse Dataset
+  sourceName   String? // nome da origem que aparece no Events Manager
+  atualizadoEm DateTime @updatedAt
+}
+
 // Inscrição de Web Push (PWA) de um dispositivo, pra enviar notificação de
 // lead novo no celular mesmo com o app fechado. Uma linha por navegador/app
 // que ativou as notificações.
