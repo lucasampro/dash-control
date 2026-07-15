@@ -73,8 +73,8 @@ async function notificarFechamento(
 ) {
   if (resultadoAgora === Resultado.GANHO && resultadoAntes !== Resultado.GANHO) {
     await enviarPushParaTodos({
-      title: "NOVO CLIENTE FECHADOOO 🔔🔷",
-      body: "TOCA O SINOOOOOO e ATUALIZA A META!!!!!",
+      title: "NOVO CLIENTE FECHADO 🔔🔷",
+      body: "Toca o sinooo e atualiza a META!!!!!",
       url: "/leads",
     });
   }
