@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Origem, ReuniaoStatus, Resultado } from "@prisma/client";
 import { sincronizarLeadsMeta } from "@/lib/meta-leads";
+import { enviarPushParaTodos } from "@/lib/push";
+import { nomeDoLead } from "@/lib/lead-nome";
 
 function toNullableBool(value: FormDataEntryValue | null) {
   if (value === "true") return true;
@@ -154,7 +156,23 @@ export async function updateQualificado(id: string, value: string) {
 }
 
 export async function updateAgendou(id: string, value: string) {
-  await prisma.lead.update({ where: { id }, data: { agendou: toNullableBool(value) } });
+  const novoAgendou = toNullableBool(value);
+  const anterior = await prisma.lead.findUnique({
+    where: { id },
+    select: { agendou: true, dadosFormulario: true },
+  });
+  await prisma.lead.update({ where: { id }, data: { agendou: novoAgendou } });
+
+  // Notifica só quando o agendamento passa a ser "Sim" (e não estava antes),
+  // pra não disparar de novo em cada re-marcação.
+  if (novoAgendou === true && anterior?.agendou !== true) {
+    await enviarPushParaTodos({
+      title: "Nova Reunião Agendada ✅",
+      body: `Reunião agendada com o lead ${nomeDoLead(anterior?.dadosFormulario)}`,
+      url: "/leads",
+    });
+  }
+
   revalidatePath("/leads");
   revalidatePath(`/leads/${id}`);
   revalidatePath("/dashboard");
