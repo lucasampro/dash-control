@@ -49,6 +49,22 @@ function parseResultado(value: FormDataEntryValue | null): Resultado {
   throw new Error("Resultado inválido.");
 }
 
+// Dispara o push de reunião agendada só na transição do agendamento pra "Sim"
+// (não estava marcado antes), evitando re-notificar em re-marcações.
+async function notificarAgendamento(
+  agendouAntes: boolean | null,
+  agendouAgora: boolean | null,
+  dadosFormulario: unknown,
+) {
+  if (agendouAgora === true && agendouAntes !== true) {
+    await enviarPushParaTodos({
+      title: "Nova Reunião Agendada ✅",
+      body: `Reunião agendada com o lead ${nomeDoLead(dadosFormulario)}`,
+      url: "/leads",
+    });
+  }
+}
+
 async function resolverCriativoManual(nome: string, campanha: string | null, conjunto: string | null) {
   const existente = await prisma.criativo.findFirst({
     where: { nome, campanha, conjunto, metaAdId: null },
@@ -106,6 +122,11 @@ export async function updateLead(id: string, formData: FormData) {
   const receitaRaw = formData.get("receita");
   const receita = receitaRaw ? Number(receitaRaw) : null;
 
+  const anterior = await prisma.lead.findUnique({
+    where: { id },
+    select: { agendou: true, dadosFormulario: true },
+  });
+
   await prisma.lead.update({
     where: { id },
     data: {
@@ -122,6 +143,8 @@ export async function updateLead(id: string, formData: FormData) {
       receita,
     },
   });
+
+  await notificarAgendamento(anterior?.agendou ?? null, agendou, anterior?.dadosFormulario);
 
   revalidatePath("/leads");
   revalidatePath(`/leads/${id}`);
@@ -163,15 +186,7 @@ export async function updateAgendou(id: string, value: string) {
   });
   await prisma.lead.update({ where: { id }, data: { agendou: novoAgendou } });
 
-  // Notifica só quando o agendamento passa a ser "Sim" (e não estava antes),
-  // pra não disparar de novo em cada re-marcação.
-  if (novoAgendou === true && anterior?.agendou !== true) {
-    await enviarPushParaTodos({
-      title: "Nova Reunião Agendada ✅",
-      body: `Reunião agendada com o lead ${nomeDoLead(anterior?.dadosFormulario)}`,
-      url: "/leads",
-    });
-  }
+  await notificarAgendamento(anterior?.agendou ?? null, novoAgendou, anterior?.dadosFormulario);
 
   revalidatePath("/leads");
   revalidatePath(`/leads/${id}`);
