@@ -78,22 +78,21 @@ function fmtX(v: number) {
 }
 
 function fmtDataCompleta(d: Date) {
-  const label = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+  const label = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric", timeZone: "America/Sao_Paulo" });
   return label;
-}
-
-function toISODate(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 /** Resolve o valor do filtro do card "Resumo" (hoje, ontem, 7d, semana ou
  * uma data específica no formato YYYY-MM-DD) no intervalo de datas a
  * consultar e no título a exibir. */
 function periodoResumo(valor: string | undefined) {
-  const agora = new Date();
-  const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
-  const fimHoje = new Date(inicioHoje.getTime() + 24 * 60 * 60 * 1000);
   const UM_DIA = 24 * 60 * 60 * 1000;
+  // "Hoje" tem que ser o dia no fuso de São Paulo, não o do servidor (UTC na
+  // Vercel). Pegamos a data atual em SP (YYYY-MM-DD) e fixamos a meia-noite de
+  // SP (UTC-3) — senão um lead das 21h de SP (= 00h UTC) vazava pro dia seguinte.
+  const hojeSP = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const inicioHoje = new Date(`${hojeSP}T00:00:00-03:00`);
+  const fimHoje = new Date(inicioHoje.getTime() + UM_DIA);
 
   if (valor === "ontem") {
     const inicio = new Date(inicioHoje.getTime() - UM_DIA);
@@ -121,8 +120,7 @@ function periodoResumo(valor: string | undefined) {
   }
 
   if (valor && /^\d{4}-\d{2}-\d{2}$/.test(valor)) {
-    const [ano, mesNum, dia] = valor.split("-").map(Number);
-    const inicio = new Date(ano, mesNum - 1, dia);
+    const inicio = new Date(`${valor}T00:00:00-03:00`);
     return { inicio, fim: new Date(inicio.getTime() + UM_DIA), titulo: `Resumo de ${fmtDataCompleta(inicio)}` };
   }
 
@@ -221,7 +219,10 @@ export default async function DashboardPage({
       <div className={cardClass}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className={sectionTitleClass}>{resumoTitulo}</p>
-          <ResumoSelector resumo={resumoValor} hoje={toISODate(new Date())} />
+          <ResumoSelector
+            resumo={resumoValor}
+            hoje={new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" })}
+          />
         </div>
         {hoje.totalLeads === 0 ? (
           <div className="mt-2">
