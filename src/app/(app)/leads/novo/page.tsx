@@ -8,7 +8,8 @@ import { inputClass, labelClass, cardClass, ghostButtonClass } from "@/lib/ui";
 export const dynamic = "force-dynamic";
 
 function hoje() {
-  return new Date().toISOString().slice(0, 10);
+  // Data de hoje no fuso de São Paulo (en-CA formata como YYYY-MM-DD).
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
 
 export default async function NovoLeadPage() {

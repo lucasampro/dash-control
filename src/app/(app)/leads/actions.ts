@@ -19,6 +19,13 @@ function toNullableString(value: FormDataEntryValue | null) {
   return str === "" ? null : str;
 }
 
+// O input de data manda "YYYY-MM-DD"; `new Date` interpretaria como meia-noite
+// UTC, o que faz o lead "voltar" um dia quando exibido no fuso de São Paulo
+// (UTC-3). Aqui fixamos a meia-noite de São Paulo pra a data bater na lista.
+function dataInputParaData(valor: string): Date {
+  return new Date(`${valor}T00:00:00-03:00`);
+}
+
 function parseOrigem(value: FormDataEntryValue | null): Origem {
   const str = String(value ?? "");
   if (str === Origem.PAGO || str === Origem.ORGANICO) return str;
@@ -112,7 +119,7 @@ export async function createLead(formData: FormData) {
 
   const lead = await prisma.lead.create({
     data: {
-      data: new Date(data),
+      data: dataInputParaData(data),
       origem,
       criativoId,
       sdrId,
@@ -150,7 +157,7 @@ export async function updateLead(id: string, formData: FormData) {
   await prisma.lead.update({
     where: { id },
     data: {
-      data: new Date(data),
+      data: dataInputParaData(data),
       origem,
       criativoId,
       sdrId,
