@@ -1,6 +1,8 @@
 import crypto from "crypto";
 import { prisma } from "./db";
 import { enviarPushParaTodos } from "./push";
+import { enviarWhatsapp } from "./whatsapp";
+import { nomeExibicaoLead } from "./lead-nome";
 
 const GRAPH_API_VERSION = "v21.0";
 
@@ -138,7 +140,7 @@ export async function processarLeadgen(value: LeadgenValue) {
       criativoId: criativo?.id ?? null,
       dadosFormulario,
     },
-    select: { createdAt: true, updatedAt: true, dadosFormulario: true },
+    select: { createdAt: true, updatedAt: true, nome: true, dadosFormulario: true },
   });
 
   // Só notifica quando o upsert realmente criou (createdAt === updatedAt);
@@ -150,6 +152,7 @@ export async function processarLeadgen(value: LeadgenValue) {
       body: "Novo lead do forms 🦷",
       url: "/leads",
     });
+    await enviarWhatsapp(`🦷 Novo lead cadastrado: ${nomeExibicaoLead(lead)}`);
   }
 }
 

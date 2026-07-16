@@ -205,6 +205,20 @@ model IntegracaoMeta {
   atualizadoEm DateTime @updatedAt
 }
 
+// Configuração da integração com o WhatsApp (uazapi), editável pelo Admin sem
+// redeploy. Singleton: sempre a linha de id "whatsapp". Se vazio/inativo, o
+// envio de notificação por WhatsApp é no-op. O "destino" é pra onde a mensagem
+// vai: um número (55DDDNUMERO) ou o ID de um grupo (…@g.us).
+model IntegracaoWhatsapp {
+  id           String   @id @default("whatsapp")
+  baseUrl      String? // ex: https://controlmidia.uazapi.com
+  token        String? // token da instância no uazapi
+  destino      String? // número (55…) ou ID do grupo (…@g.us)
+  destinoNome  String? // nome do destino (informativo, ex: "Comercial Control")
+  ativo        Boolean  @default(true)
+  atualizadoEm DateTime @updatedAt
+}
+
 // Inscrição de Web Push (PWA) de um dispositivo, pra enviar notificação de
 // lead novo no celular mesmo com o app fechado. Uma linha por navegador/app
 // que ativou as notificações.

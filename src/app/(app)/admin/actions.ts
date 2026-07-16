@@ -75,3 +75,27 @@ export async function upsertIntegracaoMeta(formData: FormData) {
 
   revalidatePath("/admin");
 }
+
+// Salva a configuração da integração com o WhatsApp (uazapi). Token em branco
+// mantém o atual (não precisa re-digitar). "ativo" desliga o envio sem apagar
+// as credenciais.
+export async function upsertIntegracaoWhatsapp(formData: FormData) {
+  await requireAdmin();
+
+  const baseUrl = String(formData.get("baseUrl") ?? "").trim() || null;
+  const destino = String(formData.get("destino") ?? "").trim() || null;
+  const destinoNome = String(formData.get("destinoNome") ?? "").trim() || null;
+  const ativo = formData.get("ativo") === "on";
+  const tokenInput = String(formData.get("token") ?? "").trim();
+
+  const atual = await prisma.integracaoWhatsapp.findUnique({ where: { id: "whatsapp" } });
+  const token = tokenInput || atual?.token || null;
+
+  await prisma.integracaoWhatsapp.upsert({
+    where: { id: "whatsapp" },
+    create: { id: "whatsapp", baseUrl, token, destino, destinoNome, ativo },
+    update: { baseUrl, token, destino, destinoNome, ativo },
+  });
+
+  revalidatePath("/admin");
+}

@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { UserPlus, ShieldCheck, Plug } from "lucide-react";
+import { UserPlus, ShieldCheck, Plug, MessageCircle } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { getMesReferencia } from "@/lib/mesReferencia";
-import { createUser, upsertIntegracaoMeta } from "./actions";
+import { createUser, upsertIntegracaoMeta, upsertIntegracaoWhatsapp } from "./actions";
 import { upsertMetaMensal } from "../financeiro/actions";
 import { ToggleUserButton } from "./ToggleUserButton";
 import { ResetPasswordForm } from "./ResetPasswordForm";
@@ -25,10 +25,11 @@ export default async function AdminPage({
   const params = await searchParams;
   const mes = await getMesReferencia(params.mes);
 
-  const [usuarios, meta, integracaoMeta] = await Promise.all([
+  const [usuarios, meta, integracaoMeta, integracaoWhatsapp] = await Promise.all([
     prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.metaMensal.findUnique({ where: { mes } }),
     prisma.integracaoMeta.findUnique({ where: { id: "meta" } }),
+    prisma.integracaoWhatsapp.findUnique({ where: { id: "whatsapp" } }),
   ]);
 
   return (
@@ -221,6 +222,97 @@ export default async function AdminPage({
             <SubmitButton>Salvar integração</SubmitButton>
             <Badge variant={integracaoMeta?.datasetId && integracaoMeta?.capiToken ? "success" : "neutral"}>
               {integracaoMeta?.datasetId && integracaoMeta?.capiToken ? "Ativa" : "Não configurada"}
+            </Badge>
+          </div>
+        </form>
+      </div>
+
+      <div className={cardClass}>
+        <div className="mb-1 flex items-center gap-2">
+          <MessageCircle className="size-4 text-control-blue-700" />
+          <p className={sectionTitleClass}>Integrações — WhatsApp (notificações)</p>
+        </div>
+        <p className="mb-4 text-sm text-control-ink/45">
+          Envia aviso no WhatsApp (via uazapi) quando entra um lead novo. O
+          destino pode ser um número (ex: 5531999999999) ou o ID de um grupo
+          (…@g.us).
+        </p>
+        <form action={upsertIntegracaoWhatsapp} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className={labelClass} htmlFor="baseUrl">
+              URL do servidor (uazapi)
+            </label>
+            <input
+              id="baseUrl"
+              name="baseUrl"
+              defaultValue={integracaoWhatsapp?.baseUrl ?? ""}
+              className={inputClass}
+              placeholder="https://controlmidia.uazapi.com"
+            />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="token">
+              Token da instância
+            </label>
+            <input
+              id="token"
+              name="token"
+              type="password"
+              autoComplete="off"
+              className={inputClass}
+              placeholder={integracaoWhatsapp?.token ? "•••••••• (configurado)" : "Cole o token"}
+            />
+            <p className="mt-1 text-xs text-control-ink/40">
+              {integracaoWhatsapp?.token
+                ? "Deixe em branco pra manter o token atual."
+                : "Nenhum token configurado ainda."}
+            </p>
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="destino">
+              Destino (número ou ID do grupo)
+            </label>
+            <input
+              id="destino"
+              name="destino"
+              defaultValue={integracaoWhatsapp?.destino ?? ""}
+              className={inputClass}
+              placeholder="Ex: 120363...@g.us"
+            />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="destinoNome">
+              Nome do destino (opcional)
+            </label>
+            <input
+              id="destinoNome"
+              name="destinoNome"
+              defaultValue={integracaoWhatsapp?.destinoNome ?? ""}
+              className={inputClass}
+              placeholder="Ex: Comercial Control"
+            />
+          </div>
+          <label className="col-span-full flex items-center gap-2 text-sm text-control-ink/70">
+            <input
+              type="checkbox"
+              name="ativo"
+              defaultChecked={integracaoWhatsapp?.ativo ?? true}
+              className="size-4 rounded border-control-line"
+            />
+            Enviar notificações por WhatsApp
+          </label>
+          <div className="col-span-full mt-2 flex items-center gap-3">
+            <SubmitButton>Salvar WhatsApp</SubmitButton>
+            <Badge
+              variant={
+                integracaoWhatsapp?.ativo && integracaoWhatsapp?.baseUrl && integracaoWhatsapp?.token && integracaoWhatsapp?.destino
+                  ? "success"
+                  : "neutral"
+              }
+            >
+              {integracaoWhatsapp?.ativo && integracaoWhatsapp?.baseUrl && integracaoWhatsapp?.token && integracaoWhatsapp?.destino
+                ? "Ativa"
+                : "Não configurada"}
             </Badge>
           </div>
         </form>
