@@ -187,6 +187,7 @@ export async function updateLead(id: string, formData: FormData) {
   const anterior = await prisma.lead.findUnique({
     where: { id },
     select: {
+      data: true,
       qualificado: true,
       agendou: true,
       reuniaoStatus: true,
@@ -197,10 +198,19 @@ export async function updateLead(id: string, formData: FormData) {
     },
   });
 
+  // O formulário só tem o campo de DATA (sem hora). Se o usuário não mudou a
+  // data, preservamos o timestamp original (com o horário de entrada do lead);
+  // só recalculamos pra meia-noite de São Paulo quando a data foi realmente
+  // alterada. Isso evita zerar o horário a cada edição.
+  const dataSpAtual = anterior?.data.toLocaleDateString("en-CA", {
+    timeZone: "America/Sao_Paulo",
+  });
+  const novaData = anterior && data === dataSpAtual ? anterior.data : dataInputParaData(data);
+
   await prisma.lead.update({
     where: { id },
     data: {
-      data: dataInputParaData(data),
+      data: novaData,
       origem,
       criativoId,
       sdrId,

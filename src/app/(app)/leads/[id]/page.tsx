@@ -142,7 +142,7 @@ export default async function EditarLeadPage({
                 name="data"
                 type="date"
                 required
-                defaultValue={lead.data.toISOString().slice(0, 10)}
+                defaultValue={lead.data.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" })}
                 className={inputClass}
               />
             </div>
