@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { prisma } from "./db";
 import { enviarPushParaTodos } from "./push";
 import { enviarWhatsapp } from "./whatsapp";
-import { nomeExibicaoLead } from "./lead-nome";
+import { mensagemNovoLeadWhatsapp } from "./lead-nome";
 
 const GRAPH_API_VERSION = "v21.0";
 
@@ -152,7 +152,7 @@ export async function processarLeadgen(value: LeadgenValue) {
       body: "Novo lead do forms 🦷",
       url: "/leads",
     });
-    await enviarWhatsapp(`🦷 Novo lead cadastrado: ${nomeExibicaoLead(lead)}`);
+    await enviarWhatsapp(mensagemNovoLeadWhatsapp(lead));
   }
 }
 

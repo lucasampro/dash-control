@@ -50,3 +50,37 @@ export function emailFormulario(dadosFormulario: unknown): string | null {
 export function telefoneFormulario(dadosFormulario: unknown): string | null {
   return valorFormulario(dadosFormulario, /(phone|telefone|whats)/i);
 }
+
+export function procedimentoFormulario(dadosFormulario: unknown): string | null {
+  return valorFormulario(dadosFormulario, /procedimento/i);
+}
+
+export function faturamentoFormulario(dadosFormulario: unknown): string | null {
+  return valorFormulario(dadosFormulario, /faturamento/i);
+}
+
+// Deixa o valor do formulário mais legível: as respostas de múltipla escolha do
+// Meta vêm com "_" no lugar de espaço (ex: "até_r$15_mil_mensal"). Sem valor,
+// mostra "—" pra manter o alinhamento da mensagem.
+function limparValor(valor: string | null): string {
+  if (!valor || !valor.trim()) return "—";
+  return valor.replace(/_/g, " ").trim();
+}
+
+// Monta a mensagem de "lead novo" enviada no WhatsApp, com os campos do
+// formulário do Meta organizados.
+export function mensagemNovoLeadWhatsapp(lead: {
+  nome?: string | null;
+  dadosFormulario?: unknown;
+}): string {
+  const d = lead.dadosFormulario;
+  return [
+    "Novo Lead Cadastrado ✅🦷",
+    "",
+    `Nome: ${limparValor(nomeExibicaoLead(lead))}`,
+    `Email: ${limparValor(emailFormulario(d))}`,
+    `Numero: ${limparValor(telefoneFormulario(d))}`,
+    `Procedimento foco: ${limparValor(procedimentoFormulario(d))}`,
+    `Faturamento: ${limparValor(faturamentoFormulario(d))}`,
+  ].join("\n");
+}
