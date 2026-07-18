@@ -294,7 +294,7 @@ export async function getMotivosNaoFechamento(inicio: Date, fim: Date, origem?: 
   });
 }
 
-export async function getCriativosPerformance(mes: string) {
+export async function getCriativosPerformance(mes: string, origem?: OrigemKey) {
   const { inicio, fim } = mesParaIntervalo(mes);
   const registros = await prisma.criativoMensal.findMany({
     where: { mes },
@@ -304,7 +304,7 @@ export async function getCriativosPerformance(mes: string) {
   const results = [];
   for (const r of registros) {
     const leads = await prisma.lead.findMany({
-      where: { criativoId: r.criativoId, data: { gte: inicio, lt: fim } },
+      where: { criativoId: r.criativoId, data: { gte: inicio, lt: fim }, ...(origem ? { origem } : {}) },
     });
     const totalLeads = leads.length;
     const fechamentos = leads.filter((l) => l.resultado === "GANHO").length;
@@ -330,9 +330,9 @@ export async function getCriativosPerformance(mes: string) {
  * que tenha um criativo vinculado (mesmo sem investimento cadastrado), então
  * serve tanto pra atribuição manual quanto pro auto-sync de Lead Ads do Meta.
  */
-export async function getCriativosRanking(inicio: Date, fim: Date) {
+export async function getCriativosRanking(inicio: Date, fim: Date, origem?: OrigemKey) {
   const leads = await prisma.lead.findMany({
-    where: { data: { gte: inicio, lt: fim }, criativoId: { not: null } },
+    where: { data: { gte: inicio, lt: fim }, criativoId: { not: null }, ...(origem ? { origem } : {}) },
     include: { criativo: true },
   });
 
