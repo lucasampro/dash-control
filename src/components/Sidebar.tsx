@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  BadgeDollarSign,
   Target,
   Users,
   Sparkles,
@@ -21,6 +22,7 @@ import { NotificationBell } from "./notificacoes/NotificationBell";
 
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/vendas", label: "Vendas", icon: BadgeDollarSign },
   { href: "/leads", label: "Leads", icon: Target },
   { href: "/ranking", label: "Ranking", icon: Trophy },
   { href: "/equipe", label: "Equipe", icon: Users },

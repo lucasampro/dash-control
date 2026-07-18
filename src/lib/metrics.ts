@@ -28,9 +28,9 @@ function pct(numerador: number, denominador: number) {
   return (numerador / denominador) * 100;
 }
 
-export async function getFunilPeriodo(inicio: Date, fim: Date) {
+export async function getFunilPeriodo(inicio: Date, fim: Date, origem?: OrigemKey) {
   const leads = await prisma.lead.findMany({
-    where: { data: { gte: inicio, lt: fim } },
+    where: { data: { gte: inicio, lt: fim }, ...(origem ? { origem } : {}) },
   });
 
   const totalLeads = leads.length;
@@ -99,7 +99,7 @@ export interface FunilDiario {
  * (coorte diária) — para a análise dia a dia do mês. Métricas de fechamento
  * (win rate, ROAS, CAC mídia) refletem o status atual dos leads: coortes
  * recentes ainda podem fechar depois. */
-export async function getFunilDiario(mes: string): Promise<FunilDiario[]> {
+export async function getFunilDiario(mes: string, origem?: OrigemKey): Promise<FunilDiario[]> {
   const { inicio, fim } = mesParaIntervalo(mes);
   const [ano, mesNum] = mes.split("-").map(Number);
   const ehMesAtual = mes === mesAtual();
@@ -108,7 +108,7 @@ export async function getFunilDiario(mes: string): Promise<FunilDiario[]> {
     : new Date(fim.getTime() - 1).getDate();
 
   const [leads, investimentos] = await Promise.all([
-    prisma.lead.findMany({ where: { data: { gte: inicio, lt: fim } } }),
+    prisma.lead.findMany({ where: { data: { gte: inicio, lt: fim }, ...(origem ? { origem } : {}) } }),
     prisma.investimentoDiario.findMany({ where: { data: { gte: inicio, lt: fim } } }),
   ]);
 
@@ -169,8 +169,10 @@ export async function getFunilDiario(mes: string): Promise<FunilDiario[]> {
 /** Resumo do período informado (hoje, ontem, últimos 7 dias, semana ou um dia
  * específico) — usado no topo do Dashboard pra dar uma visão rápida de como
  * o período está indo, independente do mês selecionado no filtro. */
-export async function getResumoPeriodo(inicio: Date, fim: Date) {
-  const leads = await prisma.lead.findMany({ where: { data: { gte: inicio, lt: fim } } });
+export async function getResumoPeriodo(inicio: Date, fim: Date, origem?: OrigemKey) {
+  const leads = await prisma.lead.findMany({
+    where: { data: { gte: inicio, lt: fim }, ...(origem ? { origem } : {}) },
+  });
 
   const totalLeads = leads.length;
   const qualificados = leads.filter((l) => l.qualificado === true).length;
@@ -184,7 +186,7 @@ export async function getResumoPeriodo(inicio: Date, fim: Date) {
   };
 }
 
-export async function getPorSdr(inicio: Date, fim: Date) {
+export async function getPorSdr(inicio: Date, fim: Date, origem?: OrigemKey) {
   const sdrs = await prisma.teamMember.findMany({
     where: { role: "SDR" },
     orderBy: { nome: "asc" },
@@ -193,7 +195,7 @@ export async function getPorSdr(inicio: Date, fim: Date) {
   const results = [];
   for (const sdr of sdrs) {
     const leads = await prisma.lead.findMany({
-      where: { sdrId: sdr.id, data: { gte: inicio, lt: fim } },
+      where: { sdrId: sdr.id, data: { gte: inicio, lt: fim }, ...(origem ? { origem } : {}) },
     });
 
     const leadsRecebidos = leads.length;
@@ -223,7 +225,7 @@ export async function getPorSdr(inicio: Date, fim: Date) {
   return results;
 }
 
-export async function getPorCloser(inicio: Date, fim: Date) {
+export async function getPorCloser(inicio: Date, fim: Date, origem?: OrigemKey) {
   const closers = await prisma.teamMember.findMany({
     where: { role: "CLOSER" },
     orderBy: { nome: "asc" },
@@ -232,7 +234,7 @@ export async function getPorCloser(inicio: Date, fim: Date) {
   const results = [];
   for (const closer of closers) {
     const leads = await prisma.lead.findMany({
-      where: { closerId: closer.id, data: { gte: inicio, lt: fim } },
+      where: { closerId: closer.id, data: { gte: inicio, lt: fim }, ...(origem ? { origem } : {}) },
     });
 
     const reunioesAgendadas = leads.length;
@@ -265,7 +267,7 @@ export async function getPorCloser(inicio: Date, fim: Date) {
   return results;
 }
 
-export async function getMotivosNaoFechamento(inicio: Date, fim: Date) {
+export async function getMotivosNaoFechamento(inicio: Date, fim: Date, origem?: OrigemKey) {
   const motivos = await prisma.motivoNaoFechamento.findMany({
     where: { ativo: true },
   });
@@ -274,6 +276,7 @@ export async function getMotivosNaoFechamento(inicio: Date, fim: Date) {
       data: { gte: inicio, lt: fim },
       reuniaoStatus: "FEITA",
       resultado: "PERDIDO",
+      ...(origem ? { origem } : {}),
     },
   });
   const total = leadsNaoFechados.length;
@@ -458,4 +461,74 @@ export async function getFinanceiroMensal(mes: string) {
 
 export async function getMetaMensal(mes: string) {
   return prisma.metaMensal.findUnique({ where: { mes } });
+}
+
+// Ordem fixa das origens (mantém as cores e a ordem consistentes nos gráficos).
+export const ORIGENS_ORDEM = ["PAGO", "ORGANICO", "LINK_BIO", "INDICACAO"] as const;
+export type OrigemKey = (typeof ORIGENS_ORDEM)[number];
+
+export interface VendaPorOrigem {
+  origem: OrigemKey;
+  leads: number;
+  fechamentos: number;
+  receita: number;
+  ticketMedio: number;
+  convLeadVenda: number; // % de leads que viraram venda
+  pctReceita: number; // % do faturamento do mês
+  investimento: number | null; // só a mídia paga tem custo lançado
+  roas: number | null; // receita ÷ investimento (só pago)
+  cac: number | null; // investimento ÷ fechamentos (só pago)
+}
+
+/** Visão de VENDAS do mês separada por origem (anúncio, orgânico, link da bio,
+ * indicação). Receita/ticket/conversão saem por origem; ROAS e CAC só existem
+ * pra mídia paga (as outras origens não têm custo lançado). */
+export async function getVendasPorOrigem(inicio: Date, fim: Date) {
+  const [leads, investimento] = await Promise.all([
+    prisma.lead.findMany({ where: { data: { gte: inicio, lt: fim } } }),
+    prisma.investimentoDiario.aggregate({
+      _sum: { valor: true },
+      where: { data: { gte: inicio, lt: fim } },
+    }),
+  ]);
+
+  const investimentoPago = investimento._sum.valor ?? 0;
+
+  const totalReceita = leads
+    .filter((l) => l.resultado === "GANHO")
+    .reduce((acc, l) => acc + (l.receita ?? 0), 0);
+
+  const origens: VendaPorOrigem[] = ORIGENS_ORDEM.map((origem) => {
+    const doGrupo = leads.filter((l) => l.origem === origem);
+    const ganhos = doGrupo.filter((l) => l.resultado === "GANHO");
+    const fechamentos = ganhos.length;
+    const receita = ganhos.reduce((acc, l) => acc + (l.receita ?? 0), 0);
+    const ehPago = origem === "PAGO";
+    const investimentoOrigem = ehPago ? investimentoPago : null;
+    return {
+      origem,
+      leads: doGrupo.length,
+      fechamentos,
+      receita,
+      ticketMedio: fechamentos ? receita / fechamentos : 0,
+      convLeadVenda: pct(fechamentos, doGrupo.length),
+      pctReceita: pct(receita, totalReceita),
+      investimento: investimentoOrigem,
+      roas: ehPago && investimentoPago ? receita / investimentoPago : ehPago ? 0 : null,
+      cac: ehPago && fechamentos ? investimentoPago / fechamentos : ehPago ? 0 : null,
+    };
+  });
+
+  const totalLeads = leads.length;
+  const totalFechamentos = leads.filter((l) => l.resultado === "GANHO").length;
+  const origensAtivas = origens.filter((o) => o.fechamentos > 0).length;
+
+  return {
+    origens,
+    totalLeads,
+    totalFechamentos,
+    totalReceita,
+    ticketMedioGeral: totalFechamentos ? totalReceita / totalFechamentos : 0,
+    origensAtivas,
+  };
 }

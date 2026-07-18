@@ -169,24 +169,24 @@ export default async function DashboardPage({
 
   const [funil, funilAnterior, porSdr, porCloser, motivos, criativos, criativosRanking, financeiro, meta, diario, hoje] =
     await Promise.all([
-      getFunilPeriodo(inicio, fim),
-      getFunilPeriodo(anterior.inicio, anterior.fim),
-      getPorSdr(inicio, fim),
-      getPorCloser(inicio, fim),
-      getMotivosNaoFechamento(inicio, fim),
+      getFunilPeriodo(inicio, fim, "PAGO"),
+      getFunilPeriodo(anterior.inicio, anterior.fim, "PAGO"),
+      getPorSdr(inicio, fim, "PAGO"),
+      getPorCloser(inicio, fim, "PAGO"),
+      getMotivosNaoFechamento(inicio, fim, "PAGO"),
       getCriativosPerformance(mes),
       getCriativosRanking(inicio, fim),
       getFinanceiroMensal(mes),
       prisma.metaMensal.findUnique({ where: { mes } }),
-      getFunilDiario(mes),
-      getResumoPeriodo(resumoInicio, resumoFim),
+      getFunilDiario(mes, "PAGO"),
+      getResumoPeriodo(resumoInicio, resumoFim, "PAGO"),
     ]);
 
   const meses = mesesAnteriores(mes, 6);
   const trend: TrendPoint[] = [];
   for (const m of meses) {
     const range = mesParaIntervalo(m);
-    const f = await getFunilPeriodo(range.inicio, range.fim);
+    const f = await getFunilPeriodo(range.inicio, range.fim, "PAGO");
     trend.push({ periodo: m, leadsTotais: f.totalLeads, receitaNova: f.receita });
   }
 
@@ -207,7 +207,7 @@ export default async function DashboardPage({
             {fmtMes(mes)}
           </h1>
           <p className="mt-0.5 text-sm text-control-ink/45">
-            Visão geral do funil, comercial e financeiro do mês.
+            Funil, comercial e financeiro da mídia paga. Vendas por origem em Vendas.
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
