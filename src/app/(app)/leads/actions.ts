@@ -23,13 +23,21 @@ function toNullableString(value: FormDataEntryValue | null) {
 // O input de data manda "YYYY-MM-DD"; `new Date` interpretaria como meia-noite
 // UTC, o que faz o lead "voltar" um dia quando exibido no fuso de São Paulo
 // (UTC-3). Aqui fixamos a meia-noite de São Paulo pra a data bater na lista.
-function dataInputParaData(valor: string): Date {
-  return new Date(`${valor}T00:00:00-03:00`);
+function dataInputParaData(valor: string, hora?: string): Date {
+  const t = hora && hora.trim() ? hora.trim() : "00:00";
+  return new Date(`${valor}T${t}:00-03:00`);
 }
 
 function parseOrigem(value: FormDataEntryValue | null): Origem {
   const str = String(value ?? "");
-  if (str === Origem.PAGO || str === Origem.ORGANICO) return str;
+  if (
+    str === Origem.PAGO ||
+    str === Origem.ORGANICO ||
+    str === Origem.LINK_BIO ||
+    str === Origem.INDICACAO
+  ) {
+    return str;
+  }
   throw new Error("Origem inválida.");
 }
 
@@ -172,6 +180,7 @@ export async function createLead(formData: FormData) {
 
 export async function updateLead(id: string, formData: FormData) {
   const data = String(formData.get("data") ?? "");
+  const hora = String(formData.get("hora") ?? "");
   const origem = parseOrigem(formData.get("origem"));
   const criativoId = toNullableString(formData.get("criativoId"));
   const sdrId = toNullableString(formData.get("sdrId"));
@@ -198,14 +207,21 @@ export async function updateLead(id: string, formData: FormData) {
     },
   });
 
-  // O formulário só tem o campo de DATA (sem hora). Se o usuário não mudou a
-  // data, preservamos o timestamp original (com o horário de entrada do lead);
-  // só recalculamos pra meia-noite de São Paulo quando a data foi realmente
-  // alterada. Isso evita zerar o horário a cada edição.
+  // Preservamos o timestamp original (com o horário de entrada do lead) quando
+  // nem a data nem a hora foram alteradas; assim uma edição comum não zera o
+  // horário. Se o usuário mexer na data ou digitar a hora, recalculamos com o
+  // fuso de São Paulo (hora vazia vira meia-noite).
   const dataSpAtual = anterior?.data.toLocaleDateString("en-CA", {
     timeZone: "America/Sao_Paulo",
   });
-  const novaData = anterior && data === dataSpAtual ? anterior.data : dataInputParaData(data);
+  const horaSpAtual = anterior?.data.toLocaleTimeString("en-GB", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const inalterado = anterior != null && data === dataSpAtual && hora === horaSpAtual;
+  const novaData = inalterado ? anterior!.data : dataInputParaData(data, hora);
 
   await prisma.lead.update({
     where: { id },

@@ -147,12 +147,31 @@ export default async function EditarLeadPage({
               />
             </div>
             <div>
+              <label className={labelClass} htmlFor="hora">
+                Horário de entrada
+              </label>
+              <input
+                id="hora"
+                name="hora"
+                type="time"
+                defaultValue={lead.data.toLocaleTimeString("en-GB", {
+                  timeZone: "America/Sao_Paulo",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                })}
+                className={inputClass}
+              />
+            </div>
+            <div>
               <label className={labelClass} htmlFor="origem">
                 Origem
               </label>
               <select id="origem" name="origem" className={inputClass} defaultValue={lead.origem}>
                 <option value="PAGO">Pago</option>
                 <option value="ORGANICO">Orgânico</option>
+                <option value="LINK_BIO">Link da bio</option>
+                <option value="INDICACAO">Indicação</option>
               </select>
             </div>
             <div>

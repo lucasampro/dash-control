@@ -20,6 +20,8 @@ enum Role {
 enum Origem {
   PAGO
   ORGANICO
+  LINK_BIO
+  INDICACAO
 }
 
 enum ReuniaoStatus {

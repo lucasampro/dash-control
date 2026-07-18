@@ -30,9 +30,13 @@ export const REUNIAO_VARIANT: Record<string, Variant> = {
 export const ORIGEM_LABEL: Record<string, string> = {
   PAGO: "Pago",
   ORGANICO: "Orgânico",
+  LINK_BIO: "Link da bio",
+  INDICACAO: "Indicação",
 };
 
 export const ORIGEM_VARIANT: Record<string, Variant> = {
   PAGO: "gold",
   ORGANICO: "blue",
+  LINK_BIO: "success",
+  INDICACAO: "warning",
 };
