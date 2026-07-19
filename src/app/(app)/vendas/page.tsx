@@ -1,6 +1,17 @@
-import { Banknote, Trophy, Receipt, PieChart, TrendingUp } from "lucide-react";
+import {
+  Banknote,
+  Trophy,
+  Receipt,
+  PieChart,
+  TrendingUp,
+  TrendingDown,
+  CircleDollarSign,
+  Clock,
+  Smile,
+} from "lucide-react";
 import {
   getVendasPorOrigem,
+  getFinanceiroMensal,
   mesParaIntervalo,
   mesAnterior,
   pctChange,
@@ -86,9 +97,10 @@ export default async function VendasPage({
   const mesAnt = mesAnterior(mes);
   const anterior = mesParaIntervalo(mesAnt);
 
-  const [vendas, vendasAnterior] = await Promise.all([
+  const [vendas, vendasAnterior, financeiro] = await Promise.all([
     getVendasPorOrigem(inicio, fim),
     getVendasPorOrigem(anterior.inicio, anterior.fim),
+    getFinanceiroMensal(mes),
   ]);
 
   // Tendência de faturamento por origem nos últimos 6 meses.
@@ -242,6 +254,33 @@ export default async function VendasPage({
           Como o faturamento de cada origem evoluiu nos últimos meses.
         </p>
         <TendenciaOrigemChart data={tendencia} />
+      </div>
+
+      <div>
+        <p className={`${sectionTitleClass} mb-1`}>Financeiro — {fmtMes(mes)}</p>
+        <p className="mb-4 text-xs text-control-ink/40">
+          Indicadores de retenção e valor de cliente (lançados na aba Financeiro).
+        </p>
+        {financeiro ? (
+          <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <KpiCard label="CAC" value={fmtMoeda(financeiro.cac)} accent="gold" icon={CircleDollarSign} />
+            <KpiCard label="ARPA" value={fmtMoeda(financeiro.arpa)} accent="gold" icon={CircleDollarSign} />
+            <KpiCard label="LTV" value={fmtMoeda(financeiro.ltv)} accent="gold" icon={TrendingUp} />
+            <KpiCard label="Payback CAC" value={`${financeiro.paybackMeses.toFixed(1)} meses`} icon={Clock} />
+            <KpiCard label="Churn logo" value={fmtPct(financeiro.churnLogo)} icon={TrendingDown} />
+            <KpiCard label="Revenue churn" value={fmtPct(financeiro.churnReceita)} icon={TrendingDown} />
+            <KpiCard label="NRR" value={fmtPct(financeiro.nrr)} icon={TrendingUp} />
+            <KpiCard label="NPS" value={financeiro.nps.toFixed(0)} icon={Smile} />
+          </section>
+        ) : (
+          <div className={cardClass}>
+            <EmptyState
+              icon={CircleDollarSign}
+              title="Sem indicadores financeiros no mês"
+              description="Lance CAC, LTV, churn e NPS na aba Financeiro para vê-los aqui."
+            />
+          </div>
+        )}
       </div>
     </div>
   );
