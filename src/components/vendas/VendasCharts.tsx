@@ -1,10 +1,15 @@
 "use client";
 
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
+  CartesianGrid,
   Cell,
   Legend,
+  Line,
+  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -281,6 +286,134 @@ export function TendenciaOrigemChart({ data }: { data: TendenciaPonto[] }) {
             />
           ))}
         </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ————————————————————————————————————————————————
+// Financeiro: tendência de faturamento e unit economics (CAC × LTV)
+// ————————————————————————————————————————————————
+export interface FinanceiroPonto {
+  periodo: string;
+  faturamento: number;
+  cac: number;
+  ltv: number;
+  arpa: number;
+  nps: number;
+}
+
+function MoedaTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: { value: number; name: string; color: string; dataKey: string }[];
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-xl border border-control-line bg-control-surface/95 px-3 py-2 text-xs shadow-lg backdrop-blur">
+      <p className="mb-1.5 font-semibold text-control-ink">{label}</p>
+      {payload.map((p) => (
+        <p key={p.dataKey} className="flex items-center gap-1.5 text-control-ink/70">
+          <span className="inline-block size-2 rounded-full" style={{ background: p.color }} />
+          {p.name}: <span className="font-semibold text-control-ink">{fmtMoeda(p.value)}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+export function FaturamentoTendenciaChart({ data }: { data: FinanceiroPonto[] }) {
+  if (data.every((d) => d.faturamento === 0)) {
+    return <EmptyChart texto="Sem faturamento lançado nos últimos meses." />;
+  }
+  return (
+    <div className="h-72 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="fatGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--color-control-gold-500)" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="var(--color-control-gold-500)" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-control-line)" vertical={false} />
+          <XAxis
+            dataKey="periodo"
+            tick={{ fontSize: 12, fill: "var(--color-control-ink)", fillOpacity: 0.4 }}
+            tickLine={false}
+            axisLine={false}
+          />
+          <YAxis
+            tick={{ fontSize: 12, fill: "var(--color-control-ink)", fillOpacity: 0.4 }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={fmtMoedaCompacta}
+            width={56}
+          />
+          <Tooltip content={<MoedaTooltip />} cursor={{ stroke: "var(--color-control-line)" }} />
+          <Area
+            type="monotone"
+            dataKey="faturamento"
+            name="Faturamento"
+            stroke="var(--color-control-gold-600)"
+            strokeWidth={2}
+            fill="url(#fatGrad)"
+            dot={{ r: 3, fill: "var(--color-control-gold-600)" }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export function UnitEconomicsChart({ data }: { data: FinanceiroPonto[] }) {
+  if (data.every((d) => d.cac === 0 && d.ltv === 0)) {
+    return <EmptyChart texto="Sem CAC/LTV lançados nos últimos meses." />;
+  }
+  return (
+    <div className="h-72 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-control-line)" vertical={false} />
+          <XAxis
+            dataKey="periodo"
+            tick={{ fontSize: 12, fill: "var(--color-control-ink)", fillOpacity: 0.4 }}
+            tickLine={false}
+            axisLine={false}
+          />
+          <YAxis
+            tick={{ fontSize: 12, fill: "var(--color-control-ink)", fillOpacity: 0.4 }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={fmtMoedaCompacta}
+            width={56}
+          />
+          <Tooltip content={<MoedaTooltip />} cursor={{ stroke: "var(--color-control-line)" }} />
+          <Legend
+            iconType="circle"
+            formatter={(value) => <span className="text-xs text-control-ink/70">{value}</span>}
+          />
+          <Line
+            type="monotone"
+            dataKey="ltv"
+            name="LTV"
+            stroke="var(--color-control-success-600)"
+            strokeWidth={2}
+            dot={{ r: 3 }}
+          />
+          <Line
+            type="monotone"
+            dataKey="cac"
+            name="CAC"
+            stroke="var(--color-control-danger-600)"
+            strokeWidth={2}
+            dot={{ r: 3 }}
+          />
+        </LineChart>
       </ResponsiveContainer>
     </div>
   );

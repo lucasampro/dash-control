@@ -8,6 +8,10 @@ import {
   CircleDollarSign,
   Clock,
   Smile,
+  Users,
+  UserPlus,
+  Scale,
+  Repeat,
 } from "lucide-react";
 import {
   getVendasPorOrigem,
@@ -31,8 +35,11 @@ import {
   ReceitaPorOrigemPie,
   VendasPorOrigemBar,
   TendenciaOrigemChart,
+  FaturamentoTendenciaChart,
+  UnitEconomicsChart,
   type OrigemChartData,
   type TendenciaPonto,
+  type FinanceiroPonto,
 } from "@/components/vendas/VendasCharts";
 import {
   sectionTitleClass,
@@ -97,10 +104,11 @@ export default async function VendasPage({
   const mesAnt = mesAnterior(mes);
   const anterior = mesParaIntervalo(mesAnt);
 
-  const [vendas, vendasAnterior, financeiro] = await Promise.all([
+  const [vendas, vendasAnterior, financeiro, financeiroAnterior] = await Promise.all([
     getVendasPorOrigem(inicio, fim),
     getVendasPorOrigem(anterior.inicio, anterior.fim),
     getFinanceiroMensal(mes),
+    getFinanceiroMensal(mesAnt),
   ]);
 
   // Tendência de faturamento por origem nos últimos 6 meses.
@@ -119,6 +127,26 @@ export default async function VendasPage({
     for (const o of v.origens) ponto[o.origem] = o.receita;
     tendencia.push(ponto);
   }
+
+  // Tendência dos indicadores financeiros nos mesmos 6 meses.
+  const financeiroMeses = await Promise.all(meses.map((m) => getFinanceiroMensal(m)));
+  const financeiroTendencia: FinanceiroPonto[] = meses.map((m, i) => {
+    const f = financeiroMeses[i];
+    return {
+      periodo: fmtMesCurto(m),
+      faturamento: f?.faturamento ?? 0,
+      cac: f?.cac ?? 0,
+      ltv: f?.ltv ?? 0,
+      arpa: f?.arpa ?? 0,
+      nps: f?.nps ?? 0,
+    };
+  });
+
+  // Comparação financeira mês a mês (só quando o toggle está ativo).
+  const finAnt = comparar ? financeiroAnterior : null;
+  const ltvCac = financeiro && financeiro.cac ? financeiro.ltv / financeiro.cac : null;
+  const ltvCacAnt =
+    finAnt && finAnt.cac ? finAnt.ltv / finAnt.cac : null;
 
   const chartData: OrigemChartData[] = vendas.origens.map((o) => ({
     origem: o.origem,
@@ -256,28 +284,138 @@ export default async function VendasPage({
         <TendenciaOrigemChart data={tendencia} />
       </div>
 
-      <div>
-        <p className={`${sectionTitleClass} mb-1`}>Financeiro — {fmtMes(mes)}</p>
-        <p className="mb-4 text-xs text-control-ink/40">
-          Indicadores de retenção e valor de cliente (lançados na aba Financeiro).
-        </p>
+      <div className="flex flex-col gap-4">
+        <div>
+          <p className={`${sectionTitleClass} mb-1`}>Financeiro — {fmtMes(mes)}</p>
+          <p className="text-xs text-control-ink/40">
+            Aquisição, valor de cliente, retenção e satisfação (lançados na aba Financeiro).
+          </p>
+        </div>
         {financeiro ? (
-          <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <KpiCard label="CAC" value={fmtMoeda(financeiro.cac)} accent="gold" icon={CircleDollarSign} />
-            <KpiCard label="ARPA" value={fmtMoeda(financeiro.arpa)} accent="gold" icon={CircleDollarSign} />
-            <KpiCard label="LTV" value={fmtMoeda(financeiro.ltv)} accent="gold" icon={TrendingUp} />
-            <KpiCard label="Payback CAC" value={`${financeiro.paybackMeses.toFixed(1)} meses`} icon={Clock} />
-            <KpiCard label="Churn logo" value={fmtPct(financeiro.churnLogo)} icon={TrendingDown} />
-            <KpiCard label="Revenue churn" value={fmtPct(financeiro.churnReceita)} icon={TrendingDown} />
-            <KpiCard label="NRR" value={fmtPct(financeiro.nrr)} icon={TrendingUp} />
-            <KpiCard label="NPS" value={financeiro.nps.toFixed(0)} icon={Smile} />
-          </section>
+          <>
+            <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <KpiCard
+                label="Faturamento recorrente"
+                value={fmtMoeda(financeiro.faturamento)}
+                accent="gold"
+                icon={Repeat}
+                delta={finAnt ? pctChange(financeiro.faturamento, finAnt.faturamento) : undefined}
+                tooltip="MRR/receita recorrente lançada no mês na aba Financeiro."
+              />
+              <KpiCard
+                label="Clientes ativos"
+                value={String(financeiro.clientesAtivos)}
+                icon={Users}
+                delta={finAnt ? pctChange(financeiro.clientesAtivos, finAnt.clientesAtivos) : undefined}
+              />
+              <KpiCard
+                label="Novos clientes"
+                value={String(financeiro.novosClientes)}
+                icon={UserPlus}
+                delta={finAnt ? pctChange(financeiro.novosClientes, finAnt.novosClientes) : undefined}
+                tooltip="Leads marcados como Ganho no mês."
+              />
+              <KpiCard
+                label="ARPA"
+                value={fmtMoeda(financeiro.arpa)}
+                accent="gold"
+                icon={CircleDollarSign}
+                delta={finAnt ? pctChange(financeiro.arpa, finAnt.arpa) : undefined}
+                tooltip="Receita média por cliente ativo (faturamento ÷ clientes ativos)."
+              />
+            </section>
+
+            <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <KpiCard
+                label="CAC"
+                value={fmtMoeda(financeiro.cac)}
+                accent="gold"
+                icon={CircleDollarSign}
+                delta={finAnt ? pctChange(financeiro.cac, finAnt.cac) : undefined}
+                invertDelta
+                tooltip="Custo de aquisição por cliente (mídia + custo comercial ÷ novos clientes)."
+              />
+              <KpiCard
+                label="LTV"
+                value={fmtMoeda(financeiro.ltv)}
+                accent="gold"
+                icon={TrendingUp}
+                delta={finAnt ? pctChange(financeiro.ltv, finAnt.ltv) : undefined}
+                tooltip="Valor do tempo de vida do cliente (ARPA ÷ churn de logo)."
+              />
+              <KpiCard
+                label="LTV / CAC"
+                value={ltvCac === null ? "—" : fmtX(ltvCac)}
+                icon={Scale}
+                delta={ltvCac !== null && ltvCacAnt ? pctChange(ltvCac, ltvCacAnt) : undefined}
+                tooltip="Quanto o cliente retorna sobre o custo de aquisição. Saudável a partir de 3x."
+              />
+              <KpiCard
+                label="Payback CAC"
+                value={`${financeiro.paybackMeses.toFixed(1)} meses`}
+                icon={Clock}
+                delta={finAnt ? pctChange(financeiro.paybackMeses, finAnt.paybackMeses) : undefined}
+                invertDelta
+                tooltip="Meses para recuperar o CAC (CAC ÷ ARPA)."
+              />
+            </section>
+
+            <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <KpiCard
+                label="Churn logo"
+                value={fmtPct(financeiro.churnLogo)}
+                icon={TrendingDown}
+                delta={finAnt ? pctChange(financeiro.churnLogo, finAnt.churnLogo) : undefined}
+                invertDelta
+                tooltip="% de clientes perdidos sobre a base do início do mês."
+              />
+              <KpiCard
+                label="Revenue churn"
+                value={fmtPct(financeiro.churnReceita)}
+                icon={TrendingDown}
+                delta={finAnt ? pctChange(financeiro.churnReceita, finAnt.churnReceita) : undefined}
+                invertDelta
+                tooltip="% de MRR perdido sobre o MRR do início do mês."
+              />
+              <KpiCard
+                label="NRR"
+                value={fmtPct(financeiro.nrr)}
+                icon={TrendingUp}
+                delta={finAnt ? pctChange(financeiro.nrr, finAnt.nrr) : undefined}
+                tooltip="Net Revenue Retention: receita retida + expansão da base existente."
+              />
+              <KpiCard
+                label="NPS"
+                value={financeiro.nps.toFixed(0)}
+                icon={Smile}
+                delta={finAnt ? pctChange(financeiro.nps, finAnt.nps) : undefined}
+                tooltip="% promotores − % detratores."
+              />
+            </section>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div className={cardClass}>
+                <p className={`${sectionTitleClass} mb-2`}>Faturamento recorrente (6 meses)</p>
+                <p className="mb-2 text-xs text-control-ink/40">
+                  Evolução da receita recorrente lançada mês a mês.
+                </p>
+                <FaturamentoTendenciaChart data={financeiroTendencia} />
+              </div>
+              <div className={cardClass}>
+                <p className={`${sectionTitleClass} mb-2`}>Unit economics — CAC × LTV (6 meses)</p>
+                <p className="mb-2 text-xs text-control-ink/40">
+                  Quanto mais distante o LTV (verde) do CAC (vermelho), mais saudável.
+                </p>
+                <UnitEconomicsChart data={financeiroTendencia} />
+              </div>
+            </div>
+          </>
         ) : (
           <div className={cardClass}>
             <EmptyState
               icon={CircleDollarSign}
               title="Sem indicadores financeiros no mês"
-              description="Lance CAC, LTV, churn e NPS na aba Financeiro para vê-los aqui."
+              description="Lance faturamento, CAC, LTV, churn e NPS na aba Financeiro para vê-los aqui."
             />
           </div>
         )}
