@@ -15,22 +15,26 @@ import {
 } from "lucide-react";
 import {
   getVendasPorOrigem,
+  getGanhosPorOrigem,
   getFinanceiroMensal,
   mesParaIntervalo,
   mesAnterior,
   pctChange,
   ORIGENS_ORDEM,
 } from "@/lib/metrics";
+import {
+  nomeExibicaoLead,
+  telefoneFormulario,
+  emailFormulario,
+} from "@/lib/lead-nome";
 import { getMesReferencia } from "@/lib/mesReferencia";
 import { getCompararMesAnterior } from "@/lib/compararMes";
 import { KpiCard } from "@/components/KpiCard";
-import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MesSelector } from "@/components/ui/MesSelector";
 import { CompararToggle } from "@/app/(app)/dashboard/CompararToggle";
 import { AutoRefresh } from "@/components/ui/AutoRefresh";
 import { sincronizarLeads } from "@/app/(app)/leads/actions";
-import { ORIGEM_LABEL, ORIGEM_VARIANT } from "@/lib/status";
 import {
   ReceitaPorOrigemPie,
   VendasPorOrigemBar,
@@ -42,14 +46,10 @@ import {
   type FinanceiroPonto,
 } from "@/components/vendas/VendasCharts";
 import {
-  sectionTitleClass,
-  cardClass,
-  tableWrapClass,
-  theadRowClass,
-  thClass,
-  trClass,
-  tdClass,
-} from "@/lib/ui";
+  VendasOrigemTabela,
+  type VendaLeadResumo,
+} from "@/components/vendas/VendasOrigemTabela";
+import { sectionTitleClass, cardClass } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -104,12 +104,36 @@ export default async function VendasPage({
   const mesAnt = mesAnterior(mes);
   const anterior = mesParaIntervalo(mesAnt);
 
-  const [vendas, vendasAnterior, financeiro, financeiroAnterior] = await Promise.all([
+  const [vendas, vendasAnterior, financeiro, financeiroAnterior, ganhos] = await Promise.all([
     getVendasPorOrigem(inicio, fim),
     getVendasPorOrigem(anterior.inicio, anterior.fim),
     getFinanceiroMensal(mes),
     getFinanceiroMensal(mesAnt),
+    getGanhosPorOrigem(inicio, fim),
   ]);
+
+  // Leads que fecharam venda, por origem, prontos pro popup de detalhe.
+  const leadsPorOrigem: Record<string, VendaLeadResumo[]> = {};
+  for (const origem of ORIGENS_ORDEM) {
+    leadsPorOrigem[origem] = ganhos[origem].map((l) => ({
+      id: l.id,
+      nome: nomeExibicaoLead(l),
+      dataLabel: l.data.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+      horaLabel: l.data.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "America/Sao_Paulo",
+      }),
+      receita: l.receita ?? 0,
+      sdr: l.sdr?.nome ?? null,
+      closer: l.closer?.nome ?? null,
+      criativoNome: l.criativo?.nome ?? null,
+      campanha: l.criativo?.campanha ?? null,
+      conjunto: l.criativo?.conjunto ?? null,
+      telefone: l.telefone ?? telefoneFormulario(l.dadosFormulario),
+      email: l.email ?? emailFormulario(l.dadosFormulario),
+    }));
+  }
 
   // Tendência de faturamento por origem nos últimos 6 meses.
   const meses = mesesAnteriores(mes, 6);
@@ -223,58 +247,22 @@ export default async function VendasPage({
         </div>
       </div>
 
-      <div className={cardClass}>
-        <p className={`${sectionTitleClass} mb-4`}>Detalhe por origem — {fmtMes(mes)}</p>
-        {semVendas ? (
-          <EmptyState
-            icon={TrendingUp}
-            title="Nenhuma venda no mês"
-            description="Assim que um lead for marcado como Ganho com receita, a origem aparece aqui."
-          />
-        ) : (
-          <div className={tableWrapClass}>
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className={theadRowClass}>
-                  <th className={thClass}>Origem</th>
-                  <th className={thClass}>Leads</th>
-                  <th className={thClass}>Vendas</th>
-                  <th className={thClass}>Receita</th>
-                  <th className={thClass}>% faturam.</th>
-                  <th className={thClass}>Ticket médio</th>
-                  <th className={thClass}>Conv. lead→venda</th>
-                  <th className={thClass}>ROAS</th>
-                  <th className={thClass}>CAC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tabela.map((o) => (
-                  <tr key={o.origem} className={trClass}>
-                    <td className={tdClass}>
-                      <Badge variant={ORIGEM_VARIANT[o.origem]}>{ORIGEM_LABEL[o.origem]}</Badge>
-                    </td>
-                    <td className={`${tdClass} tabular-nums`}>{o.leads}</td>
-                    <td className={`${tdClass} tabular-nums`}>{o.fechamentos}</td>
-                    <td className={`${tdClass} tabular-nums whitespace-nowrap`}>{fmtMoeda(o.receita)}</td>
-                    <td className={`${tdClass} tabular-nums`}>{fmtPct(o.pctReceita)}</td>
-                    <td className={`${tdClass} tabular-nums whitespace-nowrap`}>{fmtMoeda(o.ticketMedio)}</td>
-                    <td className={`${tdClass} tabular-nums`}>{fmtPct(o.convLeadVenda)}</td>
-                    <td className={`${tdClass} tabular-nums`}>
-                      {o.roas === null ? <span className="text-control-ink/30">—</span> : fmtX(o.roas)}
-                    </td>
-                    <td className={`${tdClass} tabular-nums whitespace-nowrap`}>
-                      {o.cac === null ? <span className="text-control-ink/30">—</span> : fmtMoeda(o.cac)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="mt-3 text-[11px] text-control-ink/40">
-              ROAS e CAC só existem para a mídia paga (as demais origens não têm custo lançado).
-            </p>
-          </div>
-        )}
-      </div>
+      <VendasOrigemTabela
+        mesLabel={fmtMes(mes)}
+        semVendas={semVendas}
+        tabela={tabela.map((o) => ({
+          origem: o.origem,
+          leads: o.leads,
+          fechamentos: o.fechamentos,
+          receita: o.receita,
+          ticketMedio: o.ticketMedio,
+          convLeadVenda: o.convLeadVenda,
+          pctReceita: o.pctReceita,
+          roas: o.roas,
+          cac: o.cac,
+        }))}
+        leadsPorOrigem={leadsPorOrigem}
+      />
 
       <div className={cardClass}>
         <p className={`${sectionTitleClass} mb-2`}>Tendência de faturamento por origem (6 meses)</p>

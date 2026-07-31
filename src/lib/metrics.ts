@@ -532,3 +532,21 @@ export async function getVendasPorOrigem(inicio: Date, fim: Date) {
     origensAtivas,
   };
 }
+
+/** Leads que fecharam venda (GANHO) no período, agrupados por origem e com as
+ * relações (SDR, closer, criativo) pra montar o popup de detalhe da aba Vendas. */
+export async function getGanhosPorOrigem(inicio: Date, fim: Date) {
+  const leads = await prisma.lead.findMany({
+    where: { data: { gte: inicio, lt: fim }, resultado: "GANHO" },
+    orderBy: [{ receita: "desc" }, { data: "desc" }],
+    include: { sdr: true, closer: true, criativo: true },
+  });
+  const mapa: Record<OrigemKey, typeof leads> = {
+    PAGO: [],
+    ORGANICO: [],
+    LINK_BIO: [],
+    INDICACAO: [],
+  };
+  for (const l of leads) mapa[l.origem].push(l);
+  return mapa;
+}
