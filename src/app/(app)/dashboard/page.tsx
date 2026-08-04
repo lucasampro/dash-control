@@ -94,6 +94,19 @@ function periodoResumo(valor: string | undefined) {
   const inicioHoje = new Date(`${hojeSP}T00:00:00-03:00`);
   const fimHoje = new Date(inicioHoje.getTime() + UM_DIA);
 
+  // Período escolhido no calendário: "YYYY-MM-DD_YYYY-MM-DD" (data inicial e
+  // final, ambas inclusivas — o fim é a meia-noite do dia seguinte ao final).
+  const periodo = valor?.match(/^(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})$/);
+  if (periodo) {
+    const inicio = new Date(`${periodo[1]}T00:00:00-03:00`);
+    const fimDia = new Date(`${periodo[2]}T00:00:00-03:00`);
+    return {
+      inicio,
+      fim: new Date(fimDia.getTime() + UM_DIA),
+      titulo: `Resumo de ${fmtDataCompleta(inicio)} a ${fmtDataCompleta(fimDia)}`,
+    };
+  }
+
   if (valor === "ontem") {
     const inicio = new Date(inicioHoje.getTime() - UM_DIA);
     return { inicio, fim: inicioHoje, titulo: `Resumo de ontem — ${fmtDataCompleta(inicio)}` };
