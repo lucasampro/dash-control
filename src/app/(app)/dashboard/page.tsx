@@ -39,6 +39,7 @@ import { TrendChart, type TrendPoint } from "@/components/TrendChart";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MesSelector } from "@/components/ui/MesSelector";
+import { PeriodoMesSelector } from "@/components/ui/PeriodoMesSelector";
 import { ResumoSelector } from "@/components/ui/ResumoSelector";
 import { AutoRefresh } from "@/components/ui/AutoRefresh";
 import { sincronizarLeads } from "@/app/(app)/leads/actions";
@@ -140,6 +141,26 @@ function periodoResumo(valor: string | undefined) {
   return { inicio: inicioHoje, fim: fimHoje, titulo: `Resumo de hoje — ${fmtDataCompleta(inicioHoje)}` };
 }
 
+/** Filtro de período da PÁGINA inteira: recorta o painel para um subintervalo
+ * "YYYY-MM-DD_YYYY-MM-DD" (ou data única) dentro do mês selecionado. Retorna
+ * null se o valor for inválido ou cair fora do mês (aí usamos o mês inteiro). */
+function periodoDaPagina(valor: string | undefined, mesInicio: Date, mesFim: Date) {
+  const UM_DIA = 24 * 60 * 60 * 1000;
+  const range = valor?.match(/^(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})$/);
+  const unica = valor && /^\d{4}-\d{2}-\d{2}$/.test(valor) ? valor : null;
+  if (!range && !unica) return null;
+  const [ini, fimStr] = range
+    ? range[1] <= range[2]
+      ? [range[1], range[2]]
+      : [range[2], range[1]]
+    : [unica!, unica!];
+  const inicio = new Date(`${ini}T00:00:00-03:00`);
+  const fim = new Date(new Date(`${fimStr}T00:00:00-03:00`).getTime() + UM_DIA);
+  // Precisa estar contido no mês selecionado.
+  if (inicio < mesInicio || fim > mesFim) return null;
+  return { inicio, fim, deLabel: ini, ateLabel: fimStr };
+}
+
 function fmtDia(dia: string) {
   return new Date(dia).toLocaleDateString("pt-BR", { timeZone: "UTC", day: "2-digit", month: "short" });
 }
@@ -169,21 +190,42 @@ function ProgressBar({ atual, meta }: { atual: number; meta: number }) {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mes?: string; resumo?: string }>;
+  searchParams: Promise<{ mes?: string; resumo?: string; periodo?: string }>;
 }) {
   const params = await searchParams;
   const mes = await getMesReferencia(params.mes);
   const comparar = await getCompararMesAnterior();
-  const { inicio, fim } = mesParaIntervalo(mes);
+  const { inicio: mesInicio, fim: mesFim } = mesParaIntervalo(mes);
   const mesAnt = mesAnterior(mes);
   const anterior = mesParaIntervalo(mesAnt);
   const resumoValor = params.resumo ?? "hoje";
   const { inicio: resumoInicio, fim: resumoFim, titulo: resumoTitulo } = periodoResumo(params.resumo);
 
+  // Filtro de período da página inteira (subintervalo dentro do mês). Quando
+  // ativo, os KPIs, SDR/Closer, motivos e ranking usam esse recorte; quando não,
+  // usam o mês inteiro. Os cards mensais (Metas, Financeiro, tendência) seguem
+  // sempre no mês cheio.
+  const periodoPagina = periodoDaPagina(params.periodo, mesInicio, mesFim);
+  const inicio = periodoPagina ? periodoPagina.inicio : mesInicio;
+  const fim = periodoPagina ? periodoPagina.fim : mesFim;
+
+  // Base de comparação: com período ativo, comparamos com a janela imediatamente
+  // anterior de mesma duração; sem período, com o mês anterior inteiro.
+  const compInicio = periodoPagina
+    ? new Date(inicio.getTime() - (fim.getTime() - inicio.getTime()))
+    : anterior.inicio;
+  const compFim = periodoPagina ? inicio : anterior.fim;
+
+  const hojeSP = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const [anoM, mesM] = mes.split("-").map(Number);
+  const primeiroDiaMes = `${mes}-01`;
+  const ultimoDiaMes = `${mes}-${String(new Date(anoM, mesM, 0).getDate()).padStart(2, "0")}`;
+  const maxPeriodo = ultimoDiaMes <= hojeSP ? ultimoDiaMes : hojeSP;
+
   const [funil, funilAnterior, porSdr, porCloser, motivos, criativos, criativosRanking, financeiro, meta, diario, hoje] =
     await Promise.all([
       getFunilPeriodo(inicio, fim, "PAGO"),
-      getFunilPeriodo(anterior.inicio, anterior.fim, "PAGO"),
+      getFunilPeriodo(compInicio, compFim, "PAGO"),
       getPorSdr(inicio, fim, "PAGO"),
       getPorCloser(inicio, fim, "PAGO"),
       getMotivosNaoFechamento(inicio, fim, "PAGO"),
@@ -194,6 +236,10 @@ export default async function DashboardPage({
       getFunilDiario(mes, "PAGO"),
       getResumoPeriodo(resumoInicio, resumoFim, "PAGO"),
     ]);
+
+  // O card "Metas do mês" compara com as metas mensais, então precisa do funil do
+  // mês cheio mesmo quando há um período recortado. Sem período, reaproveita funil.
+  const funilMes = periodoPagina ? await getFunilPeriodo(mesInicio, mesFim, "PAGO") : funil;
 
   const meses = mesesAnteriores(mes, 6);
   const trend: TrendPoint[] = [];
@@ -222,9 +268,21 @@ export default async function DashboardPage({
           <p className="mt-0.5 text-sm text-control-ink/45">
             Funil, comercial e financeiro da mídia paga. Vendas por origem em Vendas.
           </p>
+          {periodoPagina && (
+            <p className="mt-1 text-xs font-medium text-control-blue-700">
+              Período: {fmtDataCompleta(periodoPagina.inicio)} a{" "}
+              {fmtDataCompleta(new Date(periodoPagina.fim.getTime() - 24 * 60 * 60 * 1000))}
+            </p>
+          )}
         </div>
         <div className="flex flex-col items-end gap-2">
           <MesSelector mes={mes} redirectTo="/dashboard" />
+          <PeriodoMesSelector
+            min={primeiroDiaMes}
+            max={maxPeriodo}
+            de={periodoPagina ? periodoPagina.deLabel : ""}
+            ate={periodoPagina ? periodoPagina.ateLabel : ""}
+          />
           <CompararToggle ativo={comparar} mes={mes} />
         </div>
       </div>
@@ -396,45 +454,45 @@ export default async function DashboardPage({
               <div className="flex items-baseline justify-between">
                 <p className="text-xs text-control-ink/50">Leads</p>
                 <p className="text-sm font-semibold tabular-nums">
-                  {funil.totalLeads} <span className="text-control-ink/35">/ {meta.metaLeads}</span>
+                  {funilMes.totalLeads} <span className="text-control-ink/35">/ {meta.metaLeads}</span>
                 </p>
               </div>
-              <ProgressBar atual={funil.totalLeads} meta={meta.metaLeads} />
+              <ProgressBar atual={funilMes.totalLeads} meta={meta.metaLeads} />
             </div>
             <div>
               <div className="flex items-baseline justify-between">
                 <p className="text-xs text-control-ink/50">Fechamentos</p>
                 <p className="text-sm font-semibold tabular-nums">
-                  {funil.fechamentos}{" "}
+                  {funilMes.fechamentos}{" "}
                   <span className="text-control-ink/35">/ {meta.metaFechamentos}</span>
                 </p>
               </div>
-              <ProgressBar atual={funil.fechamentos} meta={meta.metaFechamentos} />
+              <ProgressBar atual={funilMes.fechamentos} meta={meta.metaFechamentos} />
             </div>
             <div>
               <div className="flex items-baseline justify-between">
                 <p className="text-xs text-control-ink/50">Receita</p>
                 <p className="text-sm font-semibold tabular-nums">
-                  {fmtMoeda(funil.receita)}
+                  {fmtMoeda(funilMes.receita)}
                   <span className="text-control-ink/35"> / {fmtMoeda(meta.metaReceita)}</span>
                 </p>
               </div>
-              <ProgressBar atual={funil.receita} meta={meta.metaReceita} />
+              <ProgressBar atual={funilMes.receita} meta={meta.metaReceita} />
             </div>
             <div>
               <div className="flex items-baseline justify-between">
                 <p className="text-xs text-control-ink/50">CPL alvo</p>
                 <p
                   className={`text-sm font-semibold tabular-nums ${
-                    funil.cpl <= meta.metaCplQualificado ? "text-control-success-600" : "text-control-danger-600"
+                    funilMes.cpl <= meta.metaCplQualificado ? "text-control-success-600" : "text-control-danger-600"
                   }`}
                 >
-                  {fmtMoeda(funil.cpl)}
+                  {fmtMoeda(funilMes.cpl)}
                   <span className="text-control-ink/35"> / {fmtMoeda(meta.metaCplQualificado)}</span>
                 </p>
               </div>
               <p className="mt-2 text-[11px] text-control-ink/40">
-                {funil.cpl <= meta.metaCplQualificado ? "Dentro da meta" : "Acima da meta"}
+                {funilMes.cpl <= meta.metaCplQualificado ? "Dentro da meta" : "Acima da meta"}
               </p>
             </div>
           </div>
