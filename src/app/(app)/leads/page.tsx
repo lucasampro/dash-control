@@ -104,7 +104,7 @@ export default async function LeadsPage({
     ...(params.sdrId ? { sdrId: params.sdrId } : {}),
     ...(params.closerId ? { closerId: params.closerId } : {}),
     ...(params.origem
-      ? { origem: params.origem as "PAGO" | "ORGANICO" | "LINK_BIO" | "INDICACAO" }
+      ? { origem: params.origem as "PAGO" | "ORGANICO" | "LINK_BIO" | "INDICACAO" | "PROSPECCAO" | "REATIVACAO" }
       : {}),
     ...(params.resultado
       ? { resultado: params.resultado as "EM_ANDAMENTO" | "GANHO" | "PERDIDO" }
@@ -229,6 +229,8 @@ export default async function LeadsPage({
             <option value="ORGANICO">Orgânico</option>
             <option value="LINK_BIO">Link da bio</option>
             <option value="INDICACAO">Indicação</option>
+            <option value="PROSPECCAO">Prospecção</option>
+            <option value="REATIVACAO">Reativação</option>
           </select>
         </div>
         <div className="min-w-[9rem]">

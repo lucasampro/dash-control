@@ -32,6 +32,8 @@ export const ORIGEM_LABEL: Record<string, string> = {
   ORGANICO: "Orgânico",
   LINK_BIO: "Link da bio",
   INDICACAO: "Indicação",
+  PROSPECCAO: "Prospecção",
+  REATIVACAO: "Reativação",
 };
 
 export const ORIGEM_VARIANT: Record<string, Variant> = {
@@ -39,4 +41,6 @@ export const ORIGEM_VARIANT: Record<string, Variant> = {
   ORGANICO: "blue",
   LINK_BIO: "success",
   INDICACAO: "warning",
+  PROSPECCAO: "neutral",
+  REATIVACAO: "danger",
 };

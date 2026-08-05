@@ -111,6 +111,8 @@ export default async function NovoLeadPage() {
               <option value="ORGANICO">Orgânico</option>
               <option value="LINK_BIO">Link da bio</option>
               <option value="INDICACAO">Indicação</option>
+              <option value="PROSPECCAO">Prospecção</option>
+              <option value="REATIVACAO">Reativação</option>
             </select>
           </div>
 

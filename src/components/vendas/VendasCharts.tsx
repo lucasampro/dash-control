@@ -21,7 +21,7 @@ import { ORIGEM_LABEL } from "@/lib/status";
 
 // Ordem/chaves das origens, definidas aqui (não importadas de metrics) porque
 // este é um componente client e metrics.ts puxa next/headers.
-const ORIGENS_ORDEM = ["PAGO", "ORGANICO", "LINK_BIO", "INDICACAO"] as const;
+const ORIGENS_ORDEM = ["PAGO", "ORGANICO", "LINK_BIO", "INDICACAO", "PROSPECCAO", "REATIVACAO"] as const;
 export type OrigemKey = (typeof ORIGENS_ORDEM)[number];
 
 // Cor por origem — casa com os badges (ORIGEM_VARIANT em lib/status.ts).
@@ -30,6 +30,8 @@ const CORES: Record<OrigemKey, string> = {
   ORGANICO: "var(--color-control-blue-500)",
   LINK_BIO: "var(--color-control-success-600)",
   INDICACAO: "var(--color-control-warning-600)",
+  PROSPECCAO: "var(--color-control-neutral-600)",
+  REATIVACAO: "var(--color-control-danger-600)",
 };
 
 function fmtMoeda(v: number) {
@@ -215,6 +217,8 @@ export interface TendenciaPonto {
   ORGANICO: number;
   LINK_BIO: number;
   INDICACAO: number;
+  PROSPECCAO: number;
+  REATIVACAO: number;
 }
 
 function TendenciaTooltip({
@@ -247,7 +251,7 @@ function TendenciaTooltip({
 }
 
 export function TendenciaOrigemChart({ data }: { data: TendenciaPonto[] }) {
-  if (data.every((d) => d.PAGO + d.ORGANICO + d.LINK_BIO + d.INDICACAO === 0)) {
+  if (data.every((d) => d.PAGO + d.ORGANICO + d.LINK_BIO + d.INDICACAO + d.PROSPECCAO + d.REATIVACAO === 0)) {
     return <EmptyChart texto="Ainda não há faturamento suficiente para a tendência." />;
   }
   return (

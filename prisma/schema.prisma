@@ -22,6 +22,8 @@ enum Origem {
   ORGANICO
   LINK_BIO
   INDICACAO
+  PROSPECCAO
+  REATIVACAO
 }
 
 enum ReuniaoStatus {

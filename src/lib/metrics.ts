@@ -464,7 +464,7 @@ export async function getMetaMensal(mes: string) {
 }
 
 // Ordem fixa das origens (mantém as cores e a ordem consistentes nos gráficos).
-export const ORIGENS_ORDEM = ["PAGO", "ORGANICO", "LINK_BIO", "INDICACAO"] as const;
+export const ORIGENS_ORDEM = ["PAGO", "ORGANICO", "LINK_BIO", "INDICACAO", "PROSPECCAO", "REATIVACAO"] as const;
 export type OrigemKey = (typeof ORIGENS_ORDEM)[number];
 
 export interface VendaPorOrigem {
@@ -546,6 +546,8 @@ export async function getGanhosPorOrigem(inicio: Date, fim: Date) {
     ORGANICO: [],
     LINK_BIO: [],
     INDICACAO: [],
+    PROSPECCAO: [],
+    REATIVACAO: [],
   };
   for (const l of leads) mapa[l.origem].push(l);
   return mapa;

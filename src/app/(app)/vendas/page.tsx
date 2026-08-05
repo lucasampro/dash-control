@@ -147,6 +147,8 @@ export default async function VendasPage({
       ORGANICO: 0,
       LINK_BIO: 0,
       INDICACAO: 0,
+      PROSPECCAO: 0,
+      REATIVACAO: 0,
     };
     for (const o of v.origens) ponto[o.origem] = o.receita;
     tendencia.push(ponto);

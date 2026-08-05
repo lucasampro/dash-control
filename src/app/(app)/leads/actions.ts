@@ -34,7 +34,9 @@ function parseOrigem(value: FormDataEntryValue | null): Origem {
     str === Origem.PAGO ||
     str === Origem.ORGANICO ||
     str === Origem.LINK_BIO ||
-    str === Origem.INDICACAO
+    str === Origem.INDICACAO ||
+    str === Origem.PROSPECCAO ||
+    str === Origem.REATIVACAO
   ) {
     return str;
   }
