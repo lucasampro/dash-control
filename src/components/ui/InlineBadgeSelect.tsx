@@ -13,17 +13,23 @@ type InlineBadgeSelectProps = {
   value: string;
   options: Option[];
   action: (value: string) => Promise<void>;
+  disabled?: boolean;
 };
 
 // Badge clicável que abre um menu de opções e chama a Server Action ligada
 // (via .bind(null, lead.id)) assim que uma opção é escolhida — permite mudar
 // o status direto na listagem, sem entrar na tela de edição do lead.
-export function InlineBadgeSelect({ value, options, action }: InlineBadgeSelectProps) {
+// Quando `disabled` (ex.: lead de outro SDR), vira só um badge estático.
+export function InlineBadgeSelect({ value, options, action, disabled }: InlineBadgeSelectProps) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const atual = options.find((o) => o.value === value) ?? options[0];
+
+  if (disabled) {
+    return <Badge variant={atual.variant}>{atual.label}</Badge>;
+  }
 
   function handleSelect(newValue: string) {
     setOpen(false);

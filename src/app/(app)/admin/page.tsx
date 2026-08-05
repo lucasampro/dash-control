@@ -7,6 +7,7 @@ import { createUser, upsertIntegracaoMeta, upsertIntegracaoWhatsapp } from "./ac
 import { upsertMetaMensal } from "../financeiro/actions";
 import { ToggleUserButton } from "./ToggleUserButton";
 import { ResetPasswordForm } from "./ResetPasswordForm";
+import { UserTeamMemberSelect } from "./UserTeamMemberSelect";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { MesSelector } from "@/components/ui/MesSelector";
 import { Badge } from "@/components/ui/Badge";
@@ -25,11 +26,12 @@ export default async function AdminPage({
   const params = await searchParams;
   const mes = await getMesReferencia(params.mes);
 
-  const [usuarios, meta, integracaoMeta, integracaoWhatsapp] = await Promise.all([
+  const [usuarios, meta, integracaoMeta, integracaoWhatsapp, membros] = await Promise.all([
     prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.metaMensal.findUnique({ where: { mes } }),
     prisma.integracaoMeta.findUnique({ where: { id: "meta" } }),
     prisma.integracaoWhatsapp.findUnique({ where: { id: "whatsapp" } }),
+    prisma.teamMember.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }),
   ]);
 
   return (
@@ -71,6 +73,22 @@ export default async function AdminPage({
                 placeholder="Mínimo 6 caracteres"
               />
             </div>
+            <div>
+              <label className={labelClass} htmlFor="teamMemberId">
+                Membro da equipe (vínculo)
+              </label>
+              <select id="teamMemberId" name="teamMemberId" className={inputClass} defaultValue="">
+                <option value="">Sem vínculo</option>
+                {membros.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.nome} ({m.role})
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-control-ink/40">
+                Vincular a um SDR ativa a trava: ele só edita os próprios leads.
+              </p>
+            </div>
             <label className="flex items-center gap-2 text-sm text-control-ink/70">
               <input type="checkbox" name="isAdmin" className="size-4 rounded border-control-line" />
               Acesso de admin
@@ -106,7 +124,12 @@ export default async function AdminPage({
                     </div>
                     <Badge variant={u.ativo ? "success" : "neutral"}>{u.ativo ? "Ativo" : "Inativo"}</Badge>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <UserTeamMemberSelect
+                      userId={u.id}
+                      teamMemberId={u.teamMemberId}
+                      membros={membros}
+                    />
                     <ResetPasswordForm id={u.id} />
                     <ToggleUserButton id={u.id} ativo={u.ativo} />
                   </div>

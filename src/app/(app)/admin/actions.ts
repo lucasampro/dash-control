@@ -12,6 +12,7 @@ export async function createUser(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const isAdmin = formData.get("isAdmin") === "on";
+  const teamMemberId = String(formData.get("teamMemberId") ?? "").trim() || null;
 
   if (!username || !name || password.length < 6) {
     throw new Error("Preencha usuário, nome e uma senha com pelo menos 6 caracteres.");
@@ -19,10 +20,38 @@ export async function createUser(formData: FormData) {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
+  // O vínculo com o membro da equipe é @unique — se o membro já estiver ligado
+  // a outro login, desvincula do antigo antes de criar este.
+  if (teamMemberId) {
+    await prisma.user.updateMany({
+      where: { teamMemberId },
+      data: { teamMemberId: null },
+    });
+  }
+
   await prisma.user.create({
-    data: { username, name, passwordHash, isAdmin, ativo: true },
+    data: { username, name, passwordHash, isAdmin, ativo: true, teamMemberId },
   });
 
+  revalidatePath("/admin");
+}
+
+// Vincula (ou desvincula) um login a um membro da equipe (SDR/Closer). Esse
+// vínculo alimenta a trava de edição de lead: um SDR só edita leads sem SDR ou
+// atribuídos a ele mesmo. Como o campo é @unique, primeiro limpamos qualquer
+// outro login que já esteja usando esse membro.
+export async function setUserTeamMember(userId: string, teamMemberId: string) {
+  await requireAdmin();
+
+  const alvo = teamMemberId || null;
+  if (alvo) {
+    await prisma.user.updateMany({
+      where: { teamMemberId: alvo, NOT: { id: userId } },
+      data: { teamMemberId: null },
+    });
+  }
+
+  await prisma.user.update({ where: { id: userId }, data: { teamMemberId: alvo } });
   revalidatePath("/admin");
 }
 

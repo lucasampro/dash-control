@@ -8,6 +8,18 @@ import { sincronizarLeadsMeta } from "@/lib/meta-leads";
 import { enviarPushParaTodos } from "@/lib/push";
 import { enviarEventoFunilMeta } from "@/lib/meta-capi";
 import { nomeExibicaoLead } from "@/lib/lead-nome";
+import { getUsuarioAtual, podeEditarLead } from "@/lib/permissoes";
+
+// Trava de edição por SDR: garante que o usuário logado pode editar este lead.
+// Um SDR só mexe em leads sem SDR ou atribuídos a ele; admin e closer editam
+// tudo. Roda no servidor, então vale mesmo que a UI não tenha bloqueado.
+async function garantirEdicaoLead(id: string) {
+  const usuario = await getUsuarioAtual();
+  const lead = await prisma.lead.findUnique({ where: { id }, select: { sdrId: true } });
+  if (!podeEditarLead(usuario, lead?.sdrId ?? null)) {
+    throw new Error("Este lead pertence a outro SDR — você pode ver os detalhes, mas não editar.");
+  }
+}
 
 function toNullableBool(value: FormDataEntryValue | null) {
   if (value === "true") return true;
@@ -181,6 +193,7 @@ export async function createLead(formData: FormData) {
 }
 
 export async function updateLead(id: string, formData: FormData) {
+  await garantirEdicaoLead(id);
   const data = String(formData.get("data") ?? "");
   const hora = String(formData.get("hora") ?? "");
   const origem = parseOrigem(formData.get("origem"));
@@ -270,6 +283,7 @@ export async function updateLead(id: string, formData: FormData) {
 }
 
 export async function deleteLead(id: string) {
+  await garantirEdicaoLead(id);
   await prisma.lead.delete({ where: { id } });
   revalidatePath("/leads");
   redirect("/leads");
@@ -286,6 +300,7 @@ export async function sincronizarLeads() {
 // Atualizações rápidas de um único campo, usadas pelos badges clicáveis da
 // lista de leads (sem precisar entrar na tela de edição).
 export async function updateReuniaoStatus(id: string, status: string) {
+  await garantirEdicaoLead(id);
   const novoStatus = parseReuniaoStatus(status);
   const anterior = await prisma.lead.findUnique({
     where: { id },
@@ -302,6 +317,7 @@ export async function updateReuniaoStatus(id: string, status: string) {
 }
 
 export async function updateQualificado(id: string, value: string) {
+  await garantirEdicaoLead(id);
   const novoQualificado = toNullableBool(value);
   const anterior = await prisma.lead.findUnique({
     where: { id },
@@ -318,6 +334,7 @@ export async function updateQualificado(id: string, value: string) {
 }
 
 export async function updateAgendou(id: string, value: string) {
+  await garantirEdicaoLead(id);
   const novoAgendou = toNullableBool(value);
   const anterior = await prisma.lead.findUnique({
     where: { id },
@@ -340,6 +357,7 @@ export async function updateAgendou(id: string, value: string) {
 }
 
 export async function updateResultado(id: string, resultado: string) {
+  await garantirEdicaoLead(id);
   const novoResultado = parseResultado(resultado);
   const anterior = await prisma.lead.findUnique({
     where: { id },
@@ -363,6 +381,7 @@ export async function updateResultado(id: string, resultado: string) {
 }
 
 export async function updateSdr(id: string, sdrId: string) {
+  await garantirEdicaoLead(id);
   await prisma.lead.update({ where: { id }, data: { sdrId: toNullableString(sdrId) } });
   revalidatePath("/leads");
   revalidatePath(`/leads/${id}`);

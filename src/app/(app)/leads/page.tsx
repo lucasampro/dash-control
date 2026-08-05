@@ -12,6 +12,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { LeadDetailsModal } from "@/components/ui/LeadDetailsModal";
 import { InlineBadgeSelect } from "@/components/ui/InlineBadgeSelect";
 import { nomeExibicaoLead } from "@/lib/lead-nome";
+import { getUsuarioAtual, podeEditarLead } from "@/lib/permissoes";
 import {
   sincronizarLeads,
   updateReuniaoStatus,
@@ -111,9 +112,10 @@ export default async function LeadsPage({
       : {}),
   };
 
-  const [sdrs, closers] = await Promise.all([
+  const [sdrs, closers, usuario] = await Promise.all([
     prisma.teamMember.findMany({ where: { role: "SDR" }, orderBy: { nome: "asc" } }),
     prisma.teamMember.findMany({ where: { role: "CLOSER" }, orderBy: { nome: "asc" } }),
+    getUsuarioAtual(),
   ]);
 
   let leads: LeadComRelacoes[];
@@ -270,7 +272,9 @@ export default async function LeadsPage({
               </tr>
             </thead>
             <tbody>
-              {leads.map((lead) => (
+              {leads.map((lead) => {
+                const editavel = podeEditarLead(usuario, lead.sdrId);
+                return (
                 <tr key={lead.id} className={trClass}>
                   <td className={`${tdClass} tabular-nums`}>
                     {lead.data.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
@@ -297,6 +301,7 @@ export default async function LeadsPage({
                       value={lead.reuniaoStatus}
                       options={REUNIAO_OPTIONS}
                       action={updateReuniaoStatus.bind(null, lead.id)}
+                      disabled={!editavel}
                     />
                   </td>
                   <td className={tdClass}>
@@ -304,6 +309,7 @@ export default async function LeadsPage({
                       value={lead.agendou === true ? "true" : lead.agendou === false ? "false" : ""}
                       options={AGENDOU_OPTIONS}
                       action={updateAgendou.bind(null, lead.id)}
+                      disabled={!editavel}
                     />
                   </td>
                   <td className={tdClass}>
@@ -311,6 +317,7 @@ export default async function LeadsPage({
                       value={lead.qualificado === true ? "true" : lead.qualificado === false ? "false" : ""}
                       options={QUALIFICADO_OPTIONS}
                       action={updateQualificado.bind(null, lead.id)}
+                      disabled={!editavel}
                     />
                   </td>
                   <td className={tdClass}>
@@ -318,12 +325,13 @@ export default async function LeadsPage({
                       value={lead.resultado}
                       options={RESULTADO_OPTIONS}
                       action={updateResultado.bind(null, lead.id)}
+                      disabled={!editavel}
                     />
                   </td>
                   <td className={tdClass}>
                     <div className="flex flex-col items-start gap-1">
                       <Link href={`/leads/${lead.id}`} className={ghostButtonClass}>
-                        Editar
+                        {editavel ? "Editar" : "Ver"}
                       </Link>
                       <LeadDetailsModal
                         campanha={lead.criativo?.campanha ?? null}
@@ -334,7 +342,8 @@ export default async function LeadsPage({
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

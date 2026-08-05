@@ -48,6 +48,9 @@ model TeamMember {
 
   leadsComoSdr    Lead[] @relation("SdrLeads")
   leadsComoCloser Lead[] @relation("CloserLeads")
+
+  // Login (User) vinculado a este membro da equipe, quando ele acessa o painel.
+  user User?
 }
 
 // Cadastro de criativos (peças de anúncio — nível de Anúncio no Meta Ads).
@@ -192,6 +195,11 @@ model User {
   isAdmin      Boolean  @default(false)
   ativo        Boolean  @default(true)
   createdAt    DateTime @default(now())
+
+  // Membro da equipe (SDR/Closer) que este login representa. Usado para a trava
+  // de edição de lead: um SDR só edita leads sem SDR ou atribuídos a ele mesmo.
+  teamMemberId String?     @unique
+  teamMember   TeamMember? @relation(fields: [teamMemberId], references: [id], onDelete: SetNull)
 
   // Última vez que o usuário abriu/marcou as notificações como vistas — usado
   // pelo sino do painel pra contar quantos leads novos entraram desde então.

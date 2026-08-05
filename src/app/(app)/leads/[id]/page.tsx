@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Lock } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { updateLead } from "../actions";
+import { getUsuarioAtual, podeEditarLead } from "@/lib/permissoes";
 import { nomeFormulario, emailFormulario, telefoneFormulario } from "@/lib/lead-nome";
 import { DeleteButton } from "../DeleteButton";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -37,8 +38,8 @@ export default async function EditarLeadPage({
 }) {
   const { id } = await params;
 
-  const [lead, criativos, sdrs, closers, motivos] = await Promise.all([
-    prisma.lead.findUnique({ where: { id } }),
+  const [lead, criativos, sdrs, closers, motivos, usuario] = await Promise.all([
+    prisma.lead.findUnique({ where: { id }, include: { sdr: true } }),
     prisma.criativo.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }),
     prisma.teamMember.findMany({
       where: { role: "SDR", ativo: true },
@@ -49,9 +50,12 @@ export default async function EditarLeadPage({
       orderBy: { nome: "asc" },
     }),
     prisma.motivoNaoFechamento.findMany({ where: { ativo: true } }),
+    getUsuarioAtual(),
   ]);
 
   if (!lead) notFound();
+
+  const editavel = podeEditarLead(usuario, lead.sdrId);
 
   const updateLeadWithId = updateLead.bind(null, lead.id);
 
@@ -77,8 +81,15 @@ export default async function EditarLeadPage({
           <ArrowLeft className="size-4" />
           Voltar para leads
         </Link>
-        <DeleteButton id={lead.id} />
+        {editavel && <DeleteButton id={lead.id} />}
       </div>
+
+      {!editavel && (
+        <div className="flex items-center gap-2 rounded-xl border border-control-warning-200 bg-control-warning-50 px-4 py-3 text-sm text-control-warning-700">
+          <Lock className="size-4 shrink-0" />
+          Somente leitura — este lead está atribuído a {lead.sdr?.nome ?? "outro SDR"}.
+        </div>
+      )}
 
       {/* Stepper visual do funil */}
       <div className={cardClass}>
@@ -130,6 +141,7 @@ export default async function EditarLeadPage({
         )}
 
       <form action={updateLeadWithId} className="flex flex-col gap-4">
+        <fieldset disabled={!editavel} className={`flex flex-col gap-4 ${!editavel ? "opacity-60" : ""}`}>
         <div className={cardClass}>
           <p className={`${sectionTitleClass} mb-4`}>Origem</p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -172,6 +184,8 @@ export default async function EditarLeadPage({
                 <option value="ORGANICO">Orgânico</option>
                 <option value="LINK_BIO">Link da bio</option>
                 <option value="INDICACAO">Indicação</option>
+                <option value="PROSPECCAO">Prospecção</option>
+                <option value="REATIVACAO">Reativação</option>
               </select>
             </div>
             <div>
@@ -387,7 +401,10 @@ export default async function EditarLeadPage({
           </div>
         </div>
 
-        <SubmitButton className="self-start">Salvar alterações</SubmitButton>
+        </fieldset>
+        {editavel && (
+          <SubmitButton className="self-start">Salvar alterações</SubmitButton>
+        )}
       </form>
     </div>
   );
